@@ -1,9 +1,67 @@
+import PropTypes from 'prop-types';
 import { Link } from "react-router-dom";
 import { Edit3, Trash2 } from "lucide-react";
 import StatusBadge from "./StatusBadge";
-import PropTypes from 'prop-types';
+import { DataFilter } from '../../ui/DataFilter';
+import { useState, useEffect } from 'react';
+import Pagination from '../../ui/Pagination';
 
-function LicensesTable({ licenses, isLoading, onDelete }) {
+export default function LicensesTable({ licenses, isLoading, onDelete }) {
+  const [filteredLicenses, setFilteredLicenses] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+  const [totalPages, setTotalPages] = useState(1);
+
+  const filterConfig = [
+    {
+      field: 'key',
+      label: 'License Key',
+      type: 'text'
+    },
+    {
+      field: 'status',
+      label: 'Status',
+      type: 'select',
+      options: [
+        { value: 'All', label: 'All' },
+        { value: '0', label: 'Active' },
+        { value: '1', label: 'Expired' },
+        { value: '2', label: 'Suspended' },
+        { value: '3', label: 'Pending' }
+      ]
+    }
+  ];
+
+  useEffect(() => {
+    setFilteredLicenses(licenses);
+    setCurrentPage(1); // Reset to page 1 whenever licenses change
+  }, [licenses]);
+
+  const handleFilterChange = ({ searchTerm, filters }) => {
+    const results = licenses.filter((license) => {
+      const matchesSearch = !searchTerm ||
+        Object.values(license).some(
+          val => val && val.toString().toLowerCase().includes(searchTerm.toLowerCase())
+        );
+
+      const matchesFilters = Object.entries(filters).every(([field, value]) => {
+        if (!value || value === 'All') return true;
+        const fieldValue = license[field];
+        return fieldValue && fieldValue.toString().toLowerCase().includes(value.toLowerCase());
+      });
+
+      return matchesSearch && matchesFilters;
+    });
+
+    setFilteredLicenses(results);
+    setCurrentPage(1);
+  };
+
+  const handleResetFilters = () => {
+    setFilteredLicenses(licenses);
+    setCurrentPage(1);
+  };
+
   const formatDate = (dateString) => {
     if (!dateString) return '-';
     const date = new Date(dateString);
@@ -14,21 +72,35 @@ function LicensesTable({ licenses, isLoading, onDelete }) {
     });
   };
 
+  const handlePageChange = (pageNum) => {
+    setCurrentPage(pageNum);
+  };
+
+  useEffect(() => {
+    const pages = Math.ceil(filteredLicenses.length / itemsPerPage) || 1;
+    setTotalPages(pages);
+
+    // Clamp current page
+    if (currentPage > pages) {
+      setCurrentPage(1);
+    }
+  }, [filteredLicenses]);
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
       </div>
     );
   }
 
-  if (!licenses?.length) {
+  if (!licenses || licenses.length === 0) {
     return (
       <div className="text-center py-10">
-        <p className="text-gray-500">No licenses found</p>
-        <Link 
-          to="/add-license" 
-          className="mt-4 inline-block bg-blue-600 text-white px-4 py-2 rounded"
+        <p className="text-gray-500 dark:text-gray-400">No licenses found</p>
+        <Link
+          to="/licenses/new"
+          className="mt-4 inline-block bg-primary text-white px-4 py-2 rounded shadow-md hover:bg-primary-dark"
         >
           Add New License
         </Link>
@@ -37,72 +109,85 @@ function LicensesTable({ licenses, isLoading, onDelete }) {
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-gray-100 dark:bg-gray-700">
-            <tr className="text-left text-xs text-gray-600 dark:text-gray-300">
-              <th className="p-4 font-medium">Key</th>
-              <th className="p-4 font-medium">Assigned To</th>
-              <th className="p-4 font-medium">Devices</th>
-              <th className="p-4 font-medium">Status</th>
-              <th className="p-4 font-medium">Created At</th>
-              <th className="p-4 font-medium">Expires At</th>
-              <th className="p-4 font-medium text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-            {licenses.map((license) => (
-              <tr key={license.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                <td className="p-4 text-gray-800 dark:text-gray-200 font-mono text-sm">
-                  <span className="inline-block max-w-xs truncate hover:max-w-none hover:whitespace-normal hover:break-all">
-                    {license.key}
-                  </span>
-                </td>
-                <td className="p-4">
-                  <div className="text-gray-800 dark:text-gray-200">
-                    {license.assignedToName || license.assignedTo || 'Unassigned'}
-                  </div>
-                  {license.assignedToEmail && (
-                    <div className="text-xs text-gray-500 dark:text-gray-400">
-                      {license.assignedToEmail}
-                    </div>
-                  )}
-                </td>
-                <td className="p-4 text-gray-600 dark:text-gray-300">
-                  {license.devicesCount || '0'} devices
-                </td>
-                <td className="p-4">
-                  <StatusBadge status={license.status} />
-                </td>
-                <td className="p-4 text-gray-600 dark:text-gray-300">
-                  {formatDate(license.createdAt)}
-                </td>
-                <td className="p-4">
-                  <div className={`${license.status === 1 ? 'text-red-500 dark:text-red-400' : 'text-gray-600 dark:text-gray-300'}`}>
-                    {formatDate(license.expiresAt)}
-                  </div>
-                </td>
-                <td className="p-4">
-                  <div className="flex justify-end space-x-2">
-                    <Link
-                      to={`/edit-license/${license.id}`}
-                      className="p-1.5 rounded bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-800"
-                    >
-                      <Edit3 size={16} />
-                    </Link>
-                    <button
-                      onClick={() => onDelete(license.id)}
-                      className="p-1.5 rounded bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-800"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                </td>
+    <div className="space-y-6">
+      <DataFilter
+        searchPlaceholder="Search licenses..."
+        filterConfig={filterConfig}
+        onFilterChange={handleFilterChange}
+        onReset={handleResetFilters}
+      />
+      <div className="bg-card rounded-lg shadow-md p-6">
+        <div className="overflow-x-auto" style={{ maxWidth: 'calc(100vw - 20rem)' }}>
+          <table className="w-full text-left border-collapse">
+            <thead className="bg-muted text-gray-700 dark:text-gray-300">
+              <tr>
+                <th className="px-4 py-3">License Key</th>
+                <th className="px-4 py-3">Assigned To</th>
+                <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3">Created</th>
+                <th className="px-4 py-3">Expires</th>
+                <th className="px-4 py-3 text-right">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {!licenses || licenses.length === 0 ? (
+                <tr>
+                  <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
+                    No licenses match your filters
+                  </td>
+                </tr>
+              ) : (
+                filteredLicenses.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((license) => (
+                  <tr key={license.id} className="border-b hover:bg-muted/50 dark:hover:bg-gray-800">
+                    <td className="px-4 py-3 font-mono text-gray-800 dark:text-gray-200">
+                      <span className="px-2 py-1 text-xs rounded bg-gray-100 dark:bg-gray-700">
+                        {license.key}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="font-medium text-gray-800 dark:text-gray-200">
+                        {license.assignedToName || license.assignedTo || 'Unassigned'}
+                      </div>
+                      {license.assignedToEmail && (
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                          {license.assignedToEmail}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <StatusBadge status={license.status} />
+                    </td>
+                    <td className="px-4 py-3 text-gray-600 dark:text-gray-300">
+                      {formatDate(license.createdAt)}
+                    </td>
+                    <td className="px-4 py-3 text-gray-600 dark:text-gray-300">
+                      {formatDate(license.expiresAt)}
+                    </td>
+                    <td className="px-4 py-3 text-right flex justify-end gap-3">
+                      <Link
+                        to={`/licenses/edit/${license.id}`}
+                        className="p-2 bg-blue-100 text-blue-600 rounded-full hover:bg-blue-200 dark:bg-blue-900/50 dark:text-blue-400"
+                      >
+                        <Edit3 size={16} />
+                      </Link>
+                      <button
+                        onClick={() => onDelete(license.id)}
+                        className="p-2 bg-red-100 text-red-600 rounded-full hover:bg-red-200 dark:bg-red-900/50 dark:text-red-400"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+        />
       </div>
     </div>
   );
@@ -116,8 +201,7 @@ LicensesTable.propTypes = {
       assignedTo: PropTypes.string,
       assignedToName: PropTypes.string,
       assignedToEmail: PropTypes.string,
-      devicesCount: PropTypes.number,
-      status: PropTypes.number.isRequired,
+      status: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
       createdAt: PropTypes.string,
       expiresAt: PropTypes.string,
     })
@@ -125,5 +209,3 @@ LicensesTable.propTypes = {
   isLoading: PropTypes.bool.isRequired,
   onDelete: PropTypes.func.isRequired,
 };
-
-export default LicensesTable;

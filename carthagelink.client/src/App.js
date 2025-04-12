@@ -2,7 +2,7 @@ import { Suspense } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import AppRoutes from './AppRoutes.js';
 import './index.css';
-import { DarkModeProvider } from './DarkModeContext.js';
+import { DarkModeProvider } from './contexts/DarkModeContext.js';
 import { AuthProvider } from './contexts/AuthContext.js';
 import LoadingSpinner from './components/common/LoadingSpinner.jsx';
 

@@ -10,8 +10,9 @@ namespace CarthageLink.Server.Services
 
         Task<IEnumerable<License>> GetAllLicensesAsync();
         Task<License> GetLicenseByIdAsync(string licenseId);
-        Task<License> GetLicenseByKeyAsync(string key);
+        //Task<License> GetLicenseByKeyAsync(string key);
         Task UpdateLicenseStatusAsync(string licenseId, LicenseStatus status);
+        Task<IEnumerable<License>> GetLicensesByFactoryIdAsync(string factoryId);
 
         Task<License?> VerifyLicenseKeyAsync(string licenseKey);
         Task DeleteLicenseAsync(string licenseId);
@@ -48,10 +49,15 @@ namespace CarthageLink.Server.Services
             return await _licenseRepository.GetByIdAsync(licenseId)
                 ?? throw new Exception("License not found.");
         }
-        public async Task<License> GetLicenseByKeyAsync(string key)
+        /* public async Task<License> GetLicenseByKeyAsync(string key)
+         {
+             return await _licenseRepository.GetLicenseByKeyAsync(key);
+             //?? throw new Exception("License not found.");
+         }*/
+        public async Task<IEnumerable<License>> GetLicensesByFactoryIdAsync(string factoryId)
         {
-            return await _licenseRepository.GetLicenseByKeyAsync(key);
-            //?? throw new Exception("License not found.");
+            // Call your repository method to fetch licenses by factoryId
+            return await _licenseRepository.GetLicensesByFactoryIdAsync(factoryId);
         }
         public async Task UpdateLicenseStatusAsync(string licenseId, LicenseStatus status)
         {

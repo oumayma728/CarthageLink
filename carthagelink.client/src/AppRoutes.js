@@ -4,16 +4,18 @@ import Home from "./components/HomePage/HomePage.js";
 import Register from "./Pages/register.js";
 import Login from "./Pages/login.js"; 
 import NotFoundPage from "./components/NotFound.js";
-
 // Lazy load dashboard components for better performance
-const Main = lazy(() => import("./Pages/dashboard/DashboardPage.jsx"));
-const DevicePage = lazy(() => import("./Pages/dashboard/DevicePage.jsx"));
-const UserPage = lazy(() => import("./Pages/dashboard/UserPage.jsx"));
-const Factory = lazy(() => import("./Pages/dashboard/FactoryPage.jsx"));
-const License = lazy(() => import("./Pages/dashboard/LicensePage.jsx"));
+const Main = lazy(() => import("./Pages/DashboardRedirect.jsx"));
+const DevicePage = lazy(() => import("./Pages/SAdmindashboard/DevicePage.jsx"));
+const UserPage = lazy(() => import("./Pages/SAdmindashboard/UserPage.jsx"));
+const Factory = lazy(() => import("./Pages/SAdmindashboard/FactoryPage.jsx"));
+const License = lazy(() => import("./Pages/SAdmindashboard/LicensePage.jsx"));
 const AddUser = lazy(() => import("./components/User/AddUser.js"));
 const AddFactory = lazy(() => import("./components/Factory/AddFactory.js"));
-
+const Profile =lazy(() => import ("./components/features/users/Profile/UserProfile.jsx"))
+const UserInfo =lazy(()=> import("./components/features/users/Profile/UserInfo.jsx") )
+const PersoInfoCard =lazy(()=> import("./components/features/users/Profile/PersoInfoCard.jsx") )
+const LicensePlan =lazy(()=> import("./Pages/FAdmindashboard/LicensePlan.jsx") )
 const AppRoutes = [
   // Public routes (no authentication required)
   {
@@ -36,7 +38,7 @@ const AppRoutes = [
   // Protected routes (require authentication)
   {
     path: "/main",
-    element: <ProtectedRoute />,
+    //element: <ProtectedRoute />,
     children: [
       {
         index: true,
@@ -95,7 +97,7 @@ const AppRoutes = [
     ]
   },
   {
-    path: "/add-factory",
+    path: "/factories/new",
     element: <ProtectedRoute />,
     children: [
       {
@@ -103,9 +105,47 @@ const AppRoutes = [
         element: <AddFactory />
       }
     ]
+  },{
+    path: "/Profile",
+    element: <ProtectedRoute />,
+    children: [
+      {
+        index: true,
+        element: <Profile/>
+      }
+    ]
+  },
+  {
+    path: "/UserInfo",
+//element: <ProtectedRoute />,
+    children: [
+      {
+        index: true,
+        element: <UserInfo/>
+      }
+    ]
+  },
+  {
+    path: "/PersoInfoCard",
+//element: <ProtectedRoute />,
+    children: [
+      {
+        index: true,
+        element: <PersoInfoCard/>
+      }
+    ]
+  }, {
+    path: "/LicensePlan",
+//element: <ProtectedRoute />,
+    children: [
+      {
+        index: true,
+        element: <LicensePlan/>
+      }
+    ]
   },
 
-  // Fallback route for 404 errors
+// Fallback route for 404 errors
   {
     path: "*",
     element: <NotFoundPage />

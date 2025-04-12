@@ -161,8 +161,29 @@ namespace CarthageLink.Server.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LogInModel model)
         {
-            await _userService.LoginUserAsync(model);
-            return Ok(new { message = "User logged in successfuly" });
+            try
+            {
+                var token = await _userService.LoginUserAsync(model);
+
+                var user = await _userService.GetUserByEmailAsync(model.Email); // get user details
+
+                return Ok(new
+                {
+                    message = "User logged in successfully",
+                    name = user.Name,
+
+                    email = user.Email,
+                    role = user.Role,
+                    token = token,
+                    factoryId = user.FactoryId
+
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
         }
+
     }
 }

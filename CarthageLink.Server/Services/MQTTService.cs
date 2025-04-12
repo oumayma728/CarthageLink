@@ -11,7 +11,6 @@ namespace CarthageLink.Server.Services
         Task ConnectAsync();
         Task PublishAsync(string topic, string payload);
         Task SubscribeAsync(string topic);
-        Task OnMessageReceived(MqttApplicationMessageReceivedEventArgs e);
     }
 
     public class MQTTService : IMQTTService
@@ -22,10 +21,10 @@ namespace CarthageLink.Server.Services
         private readonly IMqttClient _mqttClient;
         private readonly CancellationTokenSource _cancellationTokenSource = new();
 
-        public MQTTService(ILogger<MQTTService> logger, IConfiguration configuration)
+        public MQTTService(ILogger<MQTTService> logger, IConfiguration configuration, ISensorDataService sensorDataService)
         {
-
-            _logger = logger;
+            _sensorDataService = sensorDataService;
+           _logger = logger;
             _configuration = configuration;
 
             var factory = new MqttFactory();
@@ -103,52 +102,57 @@ namespace CarthageLink.Server.Services
             if (!_mqttClient.IsConnected)
                 await ConnectAsync(); // Ensure connection before subscribing
 
+            // Subscribe to the topic
             await _mqttClient.SubscribeAsync(new MqttTopicFilterBuilder().WithTopic(topic).Build());
 
-            // Prevent multiple subscriptions
-            _mqttClient.ApplicationMessageReceivedAsync -= OnMessageReceivedHandler;
-            _mqttClient.ApplicationMessageReceivedAsync += OnMessageReceivedHandler;
+            // Set the callback to handle messages
+            _mqttClient.ApplicationMessageReceivedAsync += async e =>
+            {
+                var topic = e.ApplicationMessage.Topic;
+                var payloadString = Encoding.UTF8.GetString(e.ApplicationMessage.Payload);
+
+                _logger.LogInformation(" Received message from topic {Topic} with payload: {Payload}", topic, payloadString);
+
+                try
+                {
+                    var sensorData = JsonSerializer.Deserialize<SensorData>(payloadString);
+
+                    if (sensorData != null)
+                    {
+                        // Ensure that sensor and value fields are populated
+                        if (string.IsNullOrEmpty(sensorData.Sensor))
+                        {
+                            sensorData.Sensor = "Unknown Sensor"; // Set a default value if missing
+                        }
+
+                        if (sensorData.Value == 0) // Assuming 0 is an invalid value in your case
+                        {
+                            sensorData.Value = 0; // Set a default value if missing
+                        }
+
+                        // Add timestamp (optional: can be set as server timestamp)
+                        sensorData.Timestamp = DateTime.UtcNow;
+
+                        // Save the sensor data to the database
+                        await _sensorDataService.SaveSensorDataAsync(sensorData);
+                        _logger.LogInformation("Sensor data saved to database.");
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Failed to deserialize payload into SensorData.");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Exception while processing MQTT message.");
+                }
+            };
 
             _logger.LogInformation("Subscribed to topic: {Topic}", topic);
         }
 
-        // This is the handler method that will be called when a message is received
-        private async Task OnMessageReceivedHandler(MqttApplicationMessageReceivedEventArgs e)
-        {
-            await OnMessageReceived(e); // This calls the method defined above
-        }
 
 
-        // Extract the message handler to prevent multiple delegates being added
-        public async Task OnMessageReceived(MqttApplicationMessageReceivedEventArgs e)
-        {
-            try
-            {
-                // Decode the message payload
-                var payload = Encoding.UTF8.GetString(e.ApplicationMessage.Payload);
-
-                // Deserialize the payload into your SensorData model
-                var sensorData = JsonSerializer.Deserialize<SensorData>(payload);
-
-                if (sensorData != null)
-                {
-                    // Ensure Timestamp is set (if not set in the message)
-                    sensorData.Timestamp = DateTime.UtcNow;
-
-                    // Save the data to MongoDB via SensorDataService
-                    await _sensorDataService.SaveSensorDataAsync(sensorData);
-                    _logger.LogInformation("Sensor data saved successfully.");
-                }
-                else
-                {
-                    _logger.LogWarning("Failed to deserialize sensor data.");
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error processing received MQTT message.");
-            }
-        }
 
 
 

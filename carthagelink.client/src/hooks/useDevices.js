@@ -47,10 +47,26 @@ export default function useDevices() {
       fetchDevices(); // Refresh the list of Devices after deletion
     } catch (err) {
       console.error("Error deleting Device:", err);
-      alert("Failed to delete Device."); // Display alert if deletion fails
     }
   };
-
+  const updateDeviceStatus = async (deviceId, newStatus) => {
+    try {
+      const response = await fetch(`https://localhost:7086/api/Device/${deviceId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: newStatus })//JSON.stringify function takes an object and converts it into a JSON string
+      });
+  
+      if (!response.ok) throw new Error("Update failed");
+  
+      await fetchDevices(); // Refresh list after update
+    } catch (error) {
+      console.error("Failed to update device status:", error);
+    }
+  };
+  
   // Initial data fetch when component mounts
   useEffect(() => {
     fetchDevices(); // This should be called when component mounts
@@ -61,5 +77,7 @@ export default function useDevices() {
     error,
     fetchDevices,
     deleteDevice,
+    updateDeviceStatus 
+
   };
 }

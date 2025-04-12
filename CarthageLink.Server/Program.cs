@@ -7,6 +7,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using MongoDB.Driver;
 using System.Text;
+using System.Text.Json.Serialization;
 using static CarthageLink.Server.Repositories.ILicenseRepository;
 using static CarthageLink.Server.Repositories.ISensorDataRepository;
 
@@ -15,7 +16,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 
 // Register MQTT service
-builder.Services.AddSingleton<IMQTTService, MQTTService>(); // Changed from AddScoped
+builder.Services.AddScoped<IMQTTService, MQTTService>(); // Changed from AddScoped
 builder.Services.AddScoped<MqttBackgroundService>(); // Add MongoDB
 
 // Register DatabaseSettings
@@ -78,6 +79,11 @@ builder.Services.AddAuthentication(options =>
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
     };
 });
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    });
 
 builder.Services.AddAuthorization();
 
@@ -90,6 +96,13 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+using (var scope = app.Services.CreateScope())
+{
+    var mqttService = scope.ServiceProvider.GetRequiredService<IMQTTService>();
+    await mqttService.ConnectAsync();
+    await mqttService.SubscribeAsync("backend-test"); // ✅ Put your real topic here
+
+}
 
 app.UseDefaultFiles();
 app.UseStaticFiles();
@@ -100,10 +113,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-// ✅ FIX: Ensure CORS policy name is correct
 app.UseCors("AllowAll");
 
-// ✅ FIX: Add Authentication Middleware
 app.UseAuthentication();
 app.UseAuthorization();
 

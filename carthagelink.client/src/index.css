@@ -2,3 +2,18 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Scrollbar Styles */
+.scrollbar-thin::-webkit-scrollbar {
+    height: 6px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: #94a3b8; /* slate-400 */
+    border-radius: 6px;
+  }
+  .scrollbar-thin:hover::-webkit-scrollbar-thumb {
+    background-color: #64748b; /* slate-500 */
+  }
+  

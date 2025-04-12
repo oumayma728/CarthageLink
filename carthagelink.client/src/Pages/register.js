@@ -40,14 +40,24 @@ const RegisterForm = () => {
     
     try {
       const result = await register(formData);
-      
+      console.log('Sending registration data:', {
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        password: formData.password,
+        role: formData.role,
+        licenseKey: formData.licenseKey
+      });
       if (result.success) {
         navigate("/login", { state: { registrationSuccess: true } });
       } else {
-        setError(result.error || "Registration failed. Please try again.");
+        // More detailed error message
+        setError(result.error || "Registration failed. Please check your details and try again.");
+        console.log('Registration failed details:', result);
       }
     } catch (error) {
-      setError("Registration failed. Please try again.");
+      console.error('Unexpected error:', error);
+      setError("An unexpected error occurred. Please try again later.");
     } finally {
       setIsLoading(false);
     }

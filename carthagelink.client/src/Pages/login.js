@@ -4,13 +4,13 @@ import ThemeToggle from "../components/themeToggle.js";
 import { useAuth } from"../contexts/AuthContext.js";
 
 const LoginForm = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState(""); //holds email entered by user
+  const [password, setPassword] = useState("");//holds password
   const [rememberMe, setRememberMe] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState("");//Stores any error message related to the login 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);//ontrols whether the password is visible in the form
   
   const navigate = useNavigate();
   const location = useLocation();
@@ -19,11 +19,13 @@ const LoginForm = () => {
   const from = location.state?.from?.pathname || "/main";
 
   const handleLogin = async (e) => {
-    e.preventDefault();
+    e.preventDefault();// Prevents the form from submitting and refreshing the page
     setIsLoading(true);
     setError("");
     
     try {
+          // Call the login function from AuthContext
+
       const result = await login({ email, password, rememberMe });
       
       if (result.success) {

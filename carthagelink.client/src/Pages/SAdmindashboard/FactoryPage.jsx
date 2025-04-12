@@ -37,7 +37,7 @@ export default function FactoryPage() {
     <DashboardLayout activePage="/Factory">
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
-          <h1 className="text-2xl font-bold mb-2 sm:mb-0">Factories</h1>
+          <h1 className="text-2xl font-bold mb-2 sm:mb-0 dark:text-white">Factories</h1>
           <Link 
             to="/factories/new"
             className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm"

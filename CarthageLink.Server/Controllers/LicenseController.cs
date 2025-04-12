@@ -60,7 +60,6 @@ namespace CarthageLink.Server.Controllers
                 return StatusCode(500, new { message = "An unexpected error occurred.", error = ex.Message });
             }
         }
-
         // POST api/<LicenseController>
         [HttpPost]
         public async Task<IActionResult> CreateLicense([FromBody] License license)

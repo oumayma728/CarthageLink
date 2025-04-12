@@ -29,37 +29,26 @@ namespace CarthageLink.Server.Services
         public async Task SaveSensorDataAsync(SensorData data)
         {
             try
-            { 
-                // Test data
-                var testData = new SensorData
-                {
-                    DeviceId = "TestDevice123",
-                    Data = "Sample Sensor Data",
-                    Timestamp = DateTime.UtcNow
-                };
-
-                await _repository.CreateAsync(testData);
+            {
+                await _repository.CreateAsync(data);
+                _logger.LogInformation("Sensor data saved: {Data}", data);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error in SaveSensorDataAsync");
-                throw; // Make sure this exception is caught somewhere
+                _logger.LogError(ex, "Error saving sensor data.");
+                throw;
             }
         }
 
-
         public async Task<List<SensorData>> GetRecentDataAsync(string deviceId)
         {
-            // Fetch recent data based on deviceId
             try
             {
-                _logger.LogInformation($"Fetching recent sensor data for device {deviceId}");
-                var data = await _repository.GetByDeviceIdAsync(deviceId);
-                return data;
+                return await _repository.GetByDeviceIdAsync(deviceId);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Failed to retrieve data for device {deviceId}");
+                _logger.LogError(ex, "Error fetching sensor data for device {DeviceId}", deviceId);
                 throw;
             }
         }

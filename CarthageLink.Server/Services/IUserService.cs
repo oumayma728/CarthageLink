@@ -84,6 +84,7 @@ namespace CarthageLink.Server.Services
 
             try
             {
+
                 bool isValidCredentials = await _userRepository.ValidateUserCredentialsAsync(model.Email, model.Password);
 
                 if (!isValidCredentials)
@@ -96,6 +97,7 @@ namespace CarthageLink.Server.Services
 
                 // Generate JWT token if credentials are valid
                 return _tokenService.GenerateJwtToken(user);
+              
             }
             catch (Exception ex)
             {

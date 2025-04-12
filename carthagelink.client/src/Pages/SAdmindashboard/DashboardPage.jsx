@@ -1,10 +1,9 @@
-import DashboardLayout from "../../components/Layouts/DashboardLayout";
+import DashboardLayout from "../../components/Layouts/DashboardLayout"; 
 import StatCard from "../../components/Layouts/Dashbaord/StatCard"; // Fixed typo
 import ActivityFeed from "../../components/Layouts/Dashbaord/ActivityFeed"; // Fixed typo
-import Sidebar from "../../components/Layouts/Sidebar/Sidebar";
 import Header from "../../components/Layouts/Dashbaord/DashboardHeader"; // Fixed typo
 import useDashboardData from "../../hooks/useDashboardData";
-
+import BarChartOne from "../../components/Charts/BarChart";
 export default function DashboardPage() {
   const { 
     data: dashboardData = {}, 
@@ -15,10 +14,8 @@ export default function DashboardPage() {
   } = useDashboardData();
 
   return (
-    <DashboardLayout activePage="/dashboard">
-      <Sidebar />
-      
-      <div className="flex-1 flex flex-col overflow-hidden md:ml-72">
+    <DashboardLayout activePage="/dashboard">      
+      <div className="flex-1 flex flex-col overflow-hidden md:ml-0">
         <Header 
           title="Dashboard Overview"
           onRefresh={refreshData}
@@ -66,6 +63,8 @@ export default function DashboardPage() {
               activities={dashboardData.recentActivities} 
               className="lg:col-span-2"
             />
+                  <BarChartOne />
+
           </div>
         </main>
       </div>

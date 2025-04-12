@@ -16,6 +16,8 @@ namespace CarthageLink.Server.Repositories
         Task UpdateStatusAsync(string id, LicenseStatus status);
         //Task<License> UpdateAsync(String id, Dictionary<string, object> updateFields);
         Task DeleteAsync(string id);
+        Task<IEnumerable<License>> GetLicensesByFactoryIdAsync(string factoryId);
+
         Task<License?> UpdateLicenseAsync(string id, License updatedLicense);
         public class LicenseRepository : ILicenseRepository
         {
@@ -53,6 +55,11 @@ namespace CarthageLink.Server.Repositories
                 var update = Builders<License>.Update.Set(l => l.Status, status);
 
                 await _license.UpdateOneAsync(filter, update);
+            }
+            public async Task<IEnumerable<License>> GetLicensesByFactoryIdAsync(string factoryId)
+            {
+                var filter = Builders<License>.Filter.Eq(l => l.FactoryId, factoryId);
+                return await _license.Find(filter).ToListAsync();
             }
 
             public async Task<License?> UpdateLicenseAsync(string id, License updatedLicense)

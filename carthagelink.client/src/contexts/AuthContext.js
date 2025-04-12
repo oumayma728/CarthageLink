@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
+//import jwtDecode from "jwt-decode";
 
 const AuthContext = createContext();
 
@@ -9,88 +10,90 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Initialize auth state from localStorage
   useEffect(() => {
     const token = localStorage.getItem('token');
     const userData = JSON.parse(localStorage.getItem('userData'));
-    
+  
+    console.log("Loaded from localStorage:", { token, userData });
+  
     if (token && userData) {
       setUser({
         ...userData,
-        token
+        token,
       });
+      console.log("User set in state:", { ...userData, token });
     }
+  
     setLoading(false);
   }, []);
+  
 
-  // Enhanced login function
-  const login = async ({ email, password, rememberMe }) => {
+  const login = async ({ email, password, /*rememberMe*/ }) => {
     try {
       const response = await fetch("https://localhost:7086/api/User/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
-
-      if (!response.ok) {
-        throw new Error("Invalid credentials");
-      }
+  
+      if (!response.ok) throw new Error("Invalid credentials");
+      //console.log("FULL API RESPONSE DATA:", data); // Add this line
 
       const data = await response.json();
-      
-      // Store all user data including role
+      console.log("API Response:", data);
+  
+      // EXPLICITLY include role
       const userData = {
-        email: data.email,
-        role: data.role,
         name: data.name,
-        // Add other user properties as needed
-      };
-      
+      email: data.email,
+      phone: data.phone,
+      role: data.role,
+      token: data.token,
+      factoryId: data.factoryId}
+  
+      // Save to localStorage
       localStorage.setItem("token", data.token);
       localStorage.setItem("userData", JSON.stringify(userData));
-      
-      if (rememberMe) {
-        localStorage.setItem("rememberedEmail", email);
-      }
-
-      setUser({
-        ...userData,
-        token: data.token
-      });
-      
-      return { success: true };
+      setUser(userData); // Update state
+  
+      return { success: true, user: userData };
     } catch (error) {
+      console.error("Login error:", error);
       return { success: false, error: error.message };
     }
   };
-
-  // Enhanced register function
   const register = async (formData) => {
     try {
       const response = await fetch("https://localhost:7086/api/User/register-user", {
         method: "POST",
         headers: { 
-          "Content-Type": "application/json",
-          "Accept": "application/json" 
+          "Content-Type": "application/json",//specifies the type of data that you are sending
+          "Accept": "application/json" //specifies the type of data that you are expecct to receive from the server
         },
-        body: JSON.stringify({
-          name: formData.name,
-          email: formData.email,
-          phone: formData.phone,
-          password: formData.password,
-          role: formData.role,
-          licenseKey: formData.licenseKey
-        }),
+        body: JSON.stringify(formData),
       });
   
+      const data = await response.json();
+      
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Registration failed");
+        // Extract validation errors if they exist
+        const errorDetails = data.errors 
+          ? Object.entries(data.errors).map(([field, errors]) => 
+              `${field}: ${errors.join(', ')}`
+            ).join('\n')
+          : data.message || 'Registration failed';
+        
+        throw new Error(errorDetails);
       }
   
-      return { success: true };
+      return { success: true, data };
     } catch (error) {
-      return { success: false, error: error.message };
+      console.error('Registration error:', error);
+      return { 
+        success: false, 
+        error: error.message,
+        status: error.response?.status 
+      };
     }
   };
 
@@ -99,7 +102,6 @@ export function AuthProvider({ children }) {
     localStorage.removeItem("token");
     localStorage.removeItem("userData");
     localStorage.removeItem("rememberedEmail");
-    setUser(null);
     navigate("/login");
   };
 
@@ -108,11 +110,15 @@ export function AuthProvider({ children }) {
     if (!user) return false;
     return user.role === requiredRole;
   };
+  const role = user?.role;
 
   const value = {
     user,
     loading,
     isAuthenticated: !!user,
+  isSuperAdmin: role === "SuperAdmin",
+  isFactoryAdmin: role === "FactoryAdmin",
+  isOperator: role === "Operator",
     hasRole,
     login,
     register,

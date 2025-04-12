@@ -1,35 +1,29 @@
 // components/DashboardHeader.jsx
-import { RefreshCw, Sun, Moon } from "lucide-react";
 import PropTypes from 'prop-types';
-
-export default function DashboardHeader({ 
-  title, 
-  darkMode, 
-  onToggleTheme, 
-  onRefresh, 
-  loading 
-}) {
+import { useAuth } from "../../../contexts/AuthContext"; // Import your auth context
+import { useEffect, useState } from 'react';
+export default function DashboardHeader({ title, darkMode }) {
+    
+  const { user} = useAuth(); // Get user and logout from auth context
+  const[User,setUser]=useState([""])
+  useEffect(() => {
+      const storedUser = JSON.parse(localStorage.getItem('user'));
+      if (storedUser) {
+        setUser(storedUser);
+      }
+    }, []);
+    
   return (
-    <header className="bg-white dark:bg-gray-800 shadow-sm z-10">
-      <div className="flex items-center justify-between p-5">
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-white">{title}</h1>
-        <div className="flex items-center space-x-4">
-          <button 
-            onClick={onToggleTheme}
-            className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-            aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
-          >
-            {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-          </button>
-          <button 
-            onClick={onRefresh}
-            disabled={loading}
-            className="flex items-center text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-          >
-            <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-            {loading ? 'Refreshing...' : 'Refresh Data'}
-          </button>
-        </div>
+    <header className={`bg-white dark:bg-gray-800 shadow-sm z-10   dark:text-white transition-colors duration-200 ${darkMode ? 'dark' : ''}`}>
+      <div className="flex items-center justify-between p-5  dark:text-white">
+        <h1 className="text-2xl font-bold dark:text-white">
+          {title}
+        </h1>
+        {user?.role && (
+    <p className="text-xs text-gray-500 dark:text-gray-400">
+      Welcome {user.role}
+    </p>
+        )}
       </div>
     </header>
   );
@@ -37,8 +31,6 @@ export default function DashboardHeader({
 
 DashboardHeader.propTypes = {
   title: PropTypes.string.isRequired,
-  darkMode: PropTypes.bool.isRequired,
-  onToggleTheme: PropTypes.func.isRequired,
-  onRefresh: PropTypes.func.isRequired,
-  loading: PropTypes.bool.isRequired
+  darkMode: PropTypes.bool
+
 };

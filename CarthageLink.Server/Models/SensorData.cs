@@ -12,8 +12,11 @@ namespace CarthageLink.Server.Models
         [BsonElement("deviceId")]
         public string DeviceId { get; set; } = string.Empty;
 
-        [BsonElement("data")]
-        public string Data { get; set; } = string.Empty;
+        [BsonElement("sensor")]
+        public string Sensor { get; set; } = string.Empty; // Match the "sensor" field in the payload
+
+        [BsonElement("value")]
+        public double Value { get; set; } // Match the "value" field in the payload
 
         [BsonElement("timestamp")]
         public DateTime Timestamp { get; set; }
