@@ -27,6 +27,9 @@ namespace CarthageLink.Server.Models
         [BsonRepresentation(BsonType.ObjectId)]
         public string? FactoryId { get; set; }
 
+        [BsonElement("UserId")]
+
+        public string? UserId { get; set; }
         [BsonElement("devices")]
         public List<string> Devices { get; set; } = new List<string>();
         [BsonElement("userRole")]

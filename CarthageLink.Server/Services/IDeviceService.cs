@@ -1,9 +1,10 @@
 ﻿using CarthageLink.Server.Data;
 using CarthageLink.Server.Models;
 using CarthageLink.Server.Repositories;
-
+using MongoDB.Bson;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
+using System.Collections.Generic;
 
 namespace CarthageLink.Server.Services
 {
@@ -11,11 +12,12 @@ namespace CarthageLink.Server.Services
     {
         // Get all Factories
         Task<IEnumerable<Device>> GetAllDevices(); // returns collection (IEnumerable<User>) of User objects.
-        Task<IEnumerable<Device>> GetDeviceByFactoryIdAsync(string factoryId);        // Delete factory
+        //Task<IEnumerable<Device>> GetDeviceByFactoryIdAsync(string factoryId);        // Delete factory
         Task UpdateDeviceAsync(Device updatedDevice);
         Task CreateDeviceAsync(Device device);
         Task DeleteDeviceAsync(string deviceId);
         Task<Device> GetDeviceByIdAsync(string deviceId);
+        Task<List<Device>> GetDeviceByFactoryId(string FactoryId);
     }
     public class DeviceService : IDeviceService
     {
@@ -40,10 +42,15 @@ namespace CarthageLink.Server.Services
         {
             return await _deviceRepository.GetDeviceByIdAsync(DeviceId);
         }
-        public async Task<IEnumerable<Device>> GetDeviceByFactoryIdAsync(string factoryId)
-
-        { return await _deviceRepository.GetDevicesByFactoryIdAsync(factoryId);
+        public async Task<List<Device>> GetDeviceByFactoryId(string factoryId)
+        {
+            if (string.IsNullOrWhiteSpace(factoryId))
+            {
+                throw new ArgumentException("factoryId cannot be empty");
+            }
+            return await _deviceRepository.GetByFactoryIdAsync(factoryId);
         }
+
 
         public async Task UpdateDeviceAsync(Device updatedDevice)
         {

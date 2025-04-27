@@ -3,15 +3,23 @@ using MongoDB.Bson.Serialization.Attributes;
 
 namespace CarthageLink.Server.Models
 {
+    public enum DeviceStatus
+    {
+        Active,
+        Inactive,
+        Maintenance
+    }
+    public class Location
+    {
+        [BsonElement("latitude")]
+        public double Latitude { get; set; }
+
+        [BsonElement("longitude")]
+        public double Longitude { get; set; }
+    }
+
     public class Device
     {
-        public enum DeviceStatus
-        {
-            Active,
-            Inactive,
-            Maintenance
-        }
-
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
         public string? Id { get; set; }
@@ -23,13 +31,8 @@ namespace CarthageLink.Server.Models
         public string? MacAddress { get; set; }
 
         [BsonElement("Status")]
-        public string? Status { get; set; }
-
-        [BsonElement("sensor")]
-        public string Sensor { get; set; } = string.Empty; // Match the "sensor" field in the payload
-
-        [BsonElement("value")]
-        public string Value { get; set; } = string.Empty;// Match the "value" field in the payload
+        [BsonRepresentation(BsonType.String)] // Stores enum as string
+        public DeviceStatus Status { get; set; }
 
         [BsonElement("FactoryId")]
         [BsonRepresentation(BsonType.ObjectId)]
@@ -41,5 +44,8 @@ namespace CarthageLink.Server.Models
 
         [BsonElement("LastConnected")]
         public DateTime? LastConnected { get; set; } = DateTime.UtcNow;
+
+        [BsonElement("location")]
+        public Location? Location { get; set; }
     }
 }

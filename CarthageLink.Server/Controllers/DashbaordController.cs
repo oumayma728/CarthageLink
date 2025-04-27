@@ -35,7 +35,7 @@ public class DashboardController : ControllerBase
         try
         {
             var activeDevices = await _devices
-                .CountDocumentsAsync(d => d.Status == Device.DeviceStatus.Active.ToString());
+    .CountDocumentsAsync(d => d.Status == DeviceStatus.Active);
 
             var activeFactories = await _factory
                 .CountDocumentsAsync(FilterDefinition<Factory>.Empty);
@@ -76,7 +76,7 @@ public class DashboardController : ControllerBase
 
             // Device trend aggregation
             var deviceTrend = await _devices.Aggregate()
-                .Match(d => d.Status == "Active" &&
+                .Match(d => d.Status== DeviceStatus.Active &&
                       d.LastConnected != null &&
                       d.LastConnected >= startDate &&
                       d.LastConnected <= endDate)
@@ -118,4 +118,6 @@ public class DashboardController : ControllerBase
             });
         }
     }
+
+
 }

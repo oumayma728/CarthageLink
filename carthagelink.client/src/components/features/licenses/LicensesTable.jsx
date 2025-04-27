@@ -140,7 +140,7 @@ export default function LicensesTable({ licenses, isLoading, onDelete }) {
                 filteredLicenses.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((license) => (
                   <tr key={license.id} className="border-b hover:bg-muted/50 dark:hover:bg-gray-800">
                     <td className="px-4 py-3 font-mono text-gray-800 dark:text-gray-200">
-                      <span className="px-2 py-1 text-xs rounded bg-gray-100 dark:bg-gray-700">
+                      <span className="font-mono text-gray-800 dark:text-gray-200 px-2 py-1 rounded bg-gray-100 dark:bg-gray-700">
                         {license.key}
                       </span>
                     </td>

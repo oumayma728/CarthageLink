@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
+import { getFactoryDevices } from '../api/factoryApi.js';
+import { useAuth } from '../contexts/AuthContext.js'; // Import auth context
 
 export default function useDevices() {
-  //const [did, setdid] = useState(""); // State to store Device id
-  const [devices, setDevices] = useState([]); // State to store list of Devices
-  const [isLoading, setIsLoading] = useState(true); // State to track loading status
-  const [error, setError] = useState(null); // Store any error messages
-
-  // Fetch Devices with useCallback to memoize the function
+  const { user } = useAuth(); // Get user from auth context
+  const [devices, setDevices] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [updatingStatusId, setUpdatingStatusId] = useState(null);
   const fetchDevices = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -25,59 +26,89 @@ export default function useDevices() {
       }
 
       const data = await response.json();
-      setDevices(data); // Update the state with fetched Devices
+      setDevices(data); 
     } catch (err) {
-      setError(err.message); // Set error message in state
-      console.error("Fetch error:", err); // Log error to the console
+      setError(err.message); 
+      console.error("Fetch error:", err);
     } finally {
-      setIsLoading(false); // Set loading to false once fetch is complete
+      setIsLoading(false);
     }
-  }, []); // Empty dependency array ensures this function doesn't get recreated
+  }, []); 
 
-  // Function to delete 
-  const deleteDevice= async (did) => {
+  // Fetch Devices by factory ID
+  const fetchDevicesByFactoryId = useCallback(async () => {
+    if (!user?.factoryId) {
+      setDevices([]);
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+    try {
+      const data = await getFactoryDevices(user.factoryId);
+      setDevices(data);
+    } catch (err) {
+      setError(err.message);
+      console.error("Fetch error:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user?.factoryId]); // Re-run when factoryId changes
+
+  // Function to delete device
+  const deleteDevice = async (did) => {
     try {
       const response = await fetch(`https://localhost:7086/api/Device/${did}`, {
         method: "DELETE",
       });
 
       if (!response.ok) throw new Error("Delete failed");
-
-      await response.json(); // Process the response after deletion
-      fetchDevices(); // Refresh the list of Devices after deletion
+      
+      await response.json();
+      fetchDevices(); // Refresh the list
     } catch (err) {
       console.error("Error deleting Device:", err);
+      throw err; // Re-throw to handle in component
     }
   };
+
+  // Function to update device status
   const updateDeviceStatus = async (deviceId, newStatus) => {
+    setUpdatingStatusId(deviceId);
     try {
       const response = await fetch(`https://localhost:7086/api/Device/${deviceId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ status: newStatus })//JSON.stringify function takes an object and converts it into a JSON string
+        body: JSON.stringify({ status: newStatus })
       });
-  
+
       if (!response.ok) throw new Error("Update failed");
-  
+
       await fetchDevices(); // Refresh list after update
     } catch (error) {
       console.error("Failed to update device status:", error);
+      throw error;
+    } finally {
+      setUpdatingStatusId(null);
     }
   };
-  
-  // Initial data fetch when component mounts
+
+  // Initial data fetch when component mounts or factoryId changes
   useEffect(() => {
-    fetchDevices(); // This should be called when component mounts
-  }, [fetchDevices]); // Ensure fetchDevices is in dependency array
+    fetchDevices();
+  }, [fetchDevices]);
+
   return {
     devices,
     isLoading,
     error,
     fetchDevices,
+    updatingStatusId,
+    fetchDevicesByFactoryId,
     deleteDevice,
-    updateDeviceStatus 
-
+    updateDeviceStatus
   };
 }

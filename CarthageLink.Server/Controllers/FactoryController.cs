@@ -115,17 +115,6 @@ namespace CarthageLink.Server.Controllers
             {
                 return NotFound($"Factory with id {id} not found.");
             }
-
-            /*Get the logged-in user's role and ID
-            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
-            var adminId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-            If Factory Admin, ensure they only access their assigned factory
-            if (userRole == "FactoryAdmin" && factory.FactoryAdminId != adminId)
-            {
-                return Forbid("You can only access devices from your own factory.");
-            }
-            */
             try
             {
                 var devices = await _factoryService.GetFactoryDevicesAsync(id);
@@ -135,6 +124,32 @@ namespace CarthageLink.Server.Controllers
                 }
 
                 return Ok(devices);
+            }
+            catch
+            {
+                // Return a generic error message if an exception occurs
+                return StatusCode(500, "An error occurred while fetching the devices.");
+            }
+        }
+        [HttpGet("{id}/Users")]
+        //[Authorize(Roles = "SuperAdmin,FactoryAdmin")]
+        public async Task<ActionResult<List<User>>> GetFactoryUsers(string id)
+        {
+            // Check if the factory exists
+            var factory = await _factoryService.GetFactoryByIdAsync(id);
+            if (factory == null)
+            {
+                return NotFound($"Factory with id {id} not found.");
+            }
+            try
+            {
+                var users = await _factoryService.GetFactoryUsersAsync(id);
+                if (users == null || !users.Any())
+                {
+                    return NotFound($"No users found for factory with id {id}.");
+                }
+
+                return Ok(users);
             }
             catch
             {

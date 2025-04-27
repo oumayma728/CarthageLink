@@ -17,15 +17,22 @@ namespace CarthageLink.Server.Services
 
         public string GenerateJwtToken(User user)
         {
-            var claims = new[]
+            var claims = new List<Claim>
             {
-                new Claim(JwtRegisteredClaimNames.Sub, user.Id!),
-                new Claim(JwtRegisteredClaimNames.Email, user.Email), //username
-                new Claim(ClaimTypes.Role, user.Role.ToString())
+                new(JwtRegisteredClaimNames.Sub, user.Id!),
+                new(ClaimTypes.Role, user.Role.ToString()),
+                //new("factoryId", user.FactoryId ?? string.Empty),
+                new(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64),
+                new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
             };
 
+            if (!string.IsNullOrEmpty(user.FactoryId))
+            {
+                claims.Add(new Claim("factoryId", user.FactoryId));
+            }
+
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256); 
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256); //HS256
 
             var expirationMinutes = double.Parse(_configuration["Jwt:ExpirationMinutes"]!);
 

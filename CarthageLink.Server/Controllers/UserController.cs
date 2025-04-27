@@ -56,6 +56,7 @@ namespace CarthageLink.Server.Controllers
         
         }
 
+
         // Create user for factory admin
         /*[HttpPost("factory-admin/create-user")]
         public async Task<IActionResult> PostOperator([FromBody] User user, [FromHeader] string factoryAdminFactoryId)
@@ -161,21 +162,24 @@ namespace CarthageLink.Server.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LogInModel model)
         {
+            Console.WriteLine($"[LOGIN ATTEMPT] Email: {model.Email}"); // ✅ Add this
+
             try
             {
                 var token = await _userService.LoginUserAsync(model);
-
-                var user = await _userService.GetUserByEmailAsync(model.Email); // get user details
+                var user = await _userService.GetUserByEmailAsync(model.Email);
 
                 return Ok(new
                 {
                     message = "User logged in successfully",
+                    _id = user.Id,
                     name = user.Name,
-
+                    phone = user.Phone,
                     email = user.Email,
-                    role = user.Role,
+                    role = (int)user.Role, // Convert enum to int
                     token = token,
-                    factoryId = user.FactoryId
+                    factoryId = user.FactoryId,
+                    assignedDevices = user.AssignedDevices, // Include assigned devices
 
                 });
             }
@@ -184,6 +188,7 @@ namespace CarthageLink.Server.Controllers
                 return BadRequest(new { error = ex.Message });
             }
         }
+
 
     }
 }

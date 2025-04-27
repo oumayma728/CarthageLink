@@ -1,51 +1,44 @@
-import DashboardLayout from "../../components/Layouts/DashboardLayout"; 
-import ActivityFeed from "../../components/Layouts/Dashbaord/ActivityFeed"; // Fixed typo
-import Header from "../../components/Layouts/Dashbaord/DashboardHeader"; // Fixed typo
+import DashboardLayout from "../../components/Layouts/DashboardLayout";
+import Header from "../../components/Layouts/Dashboard/DashboardHeader";
 import useDashboardData from "../../hooks/useDashboardData";
-import BarChartOne from "../../components/Charts/BarChart";
-import LineChartOne from "../../components/Charts/LineChart";
-export default function DashboardPage() {
-const { 
+//import DeviceOverview from '../../components/features/Devices/deviceOverview.jsx';
+//import MapCard from '../../components/Map/MapCard';
+import { Typography, Box } from "@mui/material";
+import ProductionChart from "../../components/Charts/ProductionChart";
+import DeviceStatusChart from "../../components/Charts/DeviceStatusChart";
+export default function FactoryDashboardPage() {
+  const { 
     data: dashboardData = {}, 
     loading, 
     error, 
     lastUpdated, 
     refreshData 
-} = useDashboardData();
+  } = useDashboardData();
 
-return (
+  return (
     <DashboardLayout activePage="/dashboard">      
-    <div className="flex-1 flex flex-col overflow-hidden md:ml-0">
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <Header 
-        title="Dashboard Overview"
-        onRefresh={refreshData}
-        loading={loading}
+          title="Dashboard Overview"
+          onRefresh={refreshData}
+          loading={loading}
         />
-
-        <main className="flex-1 overflow-y-auto p-6">
-        {error && (
-            <div className="bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 p-4 mb-6">
-            Error: {error}
-            </div>
-        )}
-
-        {lastUpdated && (
-            <div className="text-sm text-muted-foreground mb-4">
-            Last updated: {lastUpdated.toLocaleTimeString()}
-            </div>
+        
+        <Box component="main" sx={{ flex: 1, overflowY: 'auto', p: 3 }}>
+          {error && (
+            <Box sx={{ bgcolor: 'error.light', borderLeft: 4, borderColor: 'error.main', p: 2, mb: 3 }}>
+              Error: {error.message || String(error)}
+            </Box>
           )}
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <ActivityFeed 
-              activities={dashboardData.recentActivities} 
-              className="lg:col-span-2"
-            />
-          </div>
-          <BarChartOne />
-          <LineChartOne/>
-          
-        </main>
-      </div>
+          {lastUpdated && (
+            <Typography variant="body2" color="text.secondary" mt={2}>
+              Last updated: {new Date(lastUpdated).toLocaleString()}
+            </Typography>
+          )}
+        </Box>
+        <ProductionChart/>
+        <DeviceStatusChart/>
+      </Box>
     </DashboardLayout>
   );
 }

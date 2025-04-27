@@ -76,8 +76,8 @@ namespace CarthageLink.Server.Controllers
                 return NotFound($"Device with id {id} not found.");
             }
 
-            // Update only the fields that are provided
-            if (!string.IsNullOrEmpty(updatedFields.Status))
+            // Assuming updatedFields has a DeviceStatus property
+            if (updatedFields.Status != null)  // For nullable enum
             {
                 existingDevice.Status = updatedFields.Status;
             }
@@ -102,21 +102,14 @@ namespace CarthageLink.Server.Controllers
 
 
 
-        /* [HttpGet("devices/by-factory/{factoryId}")]
-         public async Task<IActionResult> GetDevicesByFactory(int factoryId)
-         {
-             var loggedInFactoryId = User.FindFirst("FactoryId")?.Value; // Get FactoryId from the token
+       /* [HttpGet("factory/{factoryId}")]
+        public async Task<ActionResult<List<Device>>> GetDevicesByFactoryId(string FactoryId)
+        {
+            var devices = await _deviceService.GetDeviceByFactoryId(FactoryId);
 
-             if (loggedInFactoryId != factoryId.ToString())
-             {
-                 return Forbid(); // Deny access if the FactoryId doesn't match
-             }
 
-             var devices = await _deviceService.GetDevicesByFactoryAsync(factoryId);
-             return Ok(devices);
-         }
-        */
-        // DELETE api/<DeviceController>/5
+            return Ok(devices);
+        }*/
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteDevice(string id)
         {

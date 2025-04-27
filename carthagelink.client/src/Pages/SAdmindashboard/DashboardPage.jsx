@@ -1,9 +1,11 @@
 import DashboardLayout from "../../components/Layouts/DashboardLayout"; 
-import StatCard from "../../components/Layouts/Dashbaord/StatCard"; // Fixed typo
-import ActivityFeed from "../../components/Layouts/Dashbaord/ActivityFeed"; // Fixed typo
-import Header from "../../components/Layouts/Dashbaord/DashboardHeader"; // Fixed typo
+import StatCard from "../../components/Layouts/Dashboard/StatCard";
+import ActivityFeed from "../../components/Layouts/Dashboard/ActivityFeed";
+import Header from "../../components/Layouts/Dashboard/DashboardHeader";
 import useDashboardData from "../../hooks/useDashboardData";
-import BarChartOne from "../../components/Charts/BarChart";
+import LineChart from "../../components/Charts/LineChart";
+import DeviceOverview from "../../components/features/Devices/deviceOverview.jsx";
+
 export default function DashboardPage() {
   const { 
     data: dashboardData = {}, 
@@ -15,7 +17,7 @@ export default function DashboardPage() {
 
   return (
     <DashboardLayout activePage="/dashboard">      
-      <div className="flex-1 flex flex-col overflow-hidden md:ml-0">
+      <div className="flex-1 flex flex-col overflow-hidden">
         <Header 
           title="Dashboard Overview"
           onRefresh={refreshData}
@@ -35,6 +37,7 @@ export default function DashboardPage() {
             </div>
           )}
 
+          {/* Stats Cards Row */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
             <StatCard 
               title="Connected Devices" 
@@ -57,15 +60,26 @@ export default function DashboardPage() {
               icon="Key"
             />
           </div>
+          <DeviceOverview />
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <ActivityFeed 
-              activities={dashboardData.recentActivities} 
-              className="lg:col-span-2"
-            />
-                  <BarChartOne />
+          {/* Charts and Map Row */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <div className="h-full">
+              <LineChart />
+              <LineChart/>
+            </div>
+            <div className="h-full">
 
+            </div>
           </div>
+
+          {/* Activity Feed - Full width at bottom */}
+          <div className="grid grid-cols-1">
+            <ActivityFeed 
+              activities={dashboardData.recentActivities || []} 
+            />
+          </div>
+
         </main>
       </div>
     </DashboardLayout>

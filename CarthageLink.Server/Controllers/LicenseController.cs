@@ -60,6 +60,15 @@ namespace CarthageLink.Server.Controllers
                 return StatusCode(500, new { message = "An unexpected error occurred.", error = ex.Message });
             }
         }
+        // Optional: Get all licenses by user if needed
+        [HttpGet("Factory/{FactoryId}")]
+        public async Task<IActionResult> GetLicensesFactoryId(string FactoryId)
+        {
+            var licenses = await _licenseService.GetLicensesByFactoryIdAsync(FactoryId);
+            return Ok(licenses);
+        }
+
+
         // POST api/<LicenseController>
         [HttpPost]
         public async Task<IActionResult> CreateLicense([FromBody] License license)

@@ -1,4 +1,5 @@
 ﻿using CarthageLink.Server.Data;
+using CarthageLink.Server.Hubs;
 using CarthageLink.Server.Repositories;
 using CarthageLink.Server.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -8,16 +9,16 @@ using Microsoft.IdentityModel.Tokens;
 using MongoDB.Driver;
 using System.Text;
 using System.Text.Json.Serialization;
+using static CarthageLink.Server.Repositories.IDeviceRepository;
 using static CarthageLink.Server.Repositories.ILicenseRepository;
 using static CarthageLink.Server.Repositories.ISensorDataRepository;
 
 var builder = WebApplication.CreateBuilder(args);
-
-// Add services to the container.
+builder.Services.AddSignalR(); // Add SignalR
 
 // Register MQTT service
-builder.Services.AddScoped<IMQTTService, MQTTService>(); // Changed from AddScoped
-builder.Services.AddScoped<MqttBackgroundService>(); // Add MongoDB
+builder.Services.AddSingleton<IMQTTService, MQTTService>();
+builder.Services.AddHostedService<MqttBackgroundService>(); // Now valid
 
 // Register DatabaseSettings
 builder.Services.Configure<DatabaseSettings>(builder.Configuration.GetSection("DatabaseSettings"));
@@ -41,18 +42,35 @@ builder.Services.AddSingleton<IMongoDatabase>(sp =>
 builder.Services.AddSingleton<ITokenService, TokenService>(); // stateless service, no need to use AddScoped
 
 // Add repositories, stateful services
-builder.Services.AddScoped<IUserRepository, UserRepository>();
-builder.Services.AddScoped<IFactoryRepository, FactoryRepository>();
-builder.Services.AddScoped<ILicenseRepository, LicenseRepository>();
-builder.Services.AddScoped<IDeviceRepository, DeviceRepository>();
-builder.Services.AddScoped<ISensorDataRepository, SensorDataRepository>();
+builder.Services.AddScoped<IReportRepository, ReportRepository>(); // ✅ if it's DI
+
+builder.Services.AddSingleton<IUserRepository, UserRepository>();
+builder.Services.AddSingleton<IFactoryRepository, FactoryRepository>();
+builder.Services.AddSingleton<ILicenseRepository, LicenseRepository>();
+builder.Services.AddSingleton<IDeviceRepository, DeviceRepository>();
+builder.Services.AddSingleton<ISensorDataRepository, SensorDataRepository>();
+builder.Services.AddHostedService<AlertMonitorService>();
 
 // Add services
+builder.Services.AddSingleton<IAlertService, AlertService>();
+builder.Services.AddScoped<IReportService, ReportService>();
+
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IFactoryService, FactoryService>();
 builder.Services.AddScoped<ILicenseService, LicenseService>();
 builder.Services.AddScoped<IDeviceService, DeviceService>();
-builder.Services.AddScoped<ISensorDataService, SensorDataService>(); // Change from Singleton to Scoped
+builder.Services.AddScoped<IInsightsService, InsightsService>();
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", options =>
+    {
+        options.WithOrigins("https://localhost:3000", "http://localhost:3000")
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials(); // Required for SignalR auth
+    });
+});
 
 builder.Services.AddControllers();
 
@@ -78,50 +96,49 @@ builder.Services.AddAuthentication(options =>
         ValidAudience = builder.Configuration["Jwt:Audience"],
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
     };
-});
-builder.Services.AddControllers()
-    .AddJsonOptions(options =>
+   options.Events = new JwtBearerEvents
+{
+    OnMessageReceived = context =>
     {
-        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
-    });
+        var accessToken = context.Request.Query["access_token"];
+        var path = context.HttpContext.Request.Path;
+
+        // Check both hub paths
+        if (!string.IsNullOrEmpty(accessToken) &&
+            (path.StartsWithSegments("/sensorHub") || path.StartsWithSegments("/alertHub")))
+        {
+            context.Token = accessToken;
+        }
+
+        return Task.CompletedTask;
+    }
+};
+
+});
 
 builder.Services.AddAuthorization();
 
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowAll",
-        policy => policy.AllowAnyOrigin()
-                        .AllowAnyMethod()
-                        .AllowAnyHeader());
-});
-
 var app = builder.Build();
-using (var scope = app.Services.CreateScope())
-{
-    var mqttService = scope.ServiceProvider.GetRequiredService<IMQTTService>();
-    await mqttService.ConnectAsync();
-    await mqttService.SubscribeAsync("backend-test"); // ✅ Put your real topic here
-
-}
 
 app.UseDefaultFiles();
-app.UseStaticFiles();
 
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+else
+{
+    app.UseHsts();
+}
 
+app.UseRouting();
 app.UseCors("AllowAll");
+app.MapHub<SensorHub>("/sensorHub"); // <-- Add this!
 
-app.UseAuthentication();
-app.UseAuthorization();
+app.MapHub<AlertHub>("/alertHub"); // Ensure the correct path for the alert hub
 
 app.UseHttpsRedirection();
-
 app.MapControllers();
-
-app.MapFallbackToFile("/index.html");
 
 app.Run();

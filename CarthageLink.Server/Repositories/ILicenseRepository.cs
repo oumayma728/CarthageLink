@@ -12,6 +12,8 @@ namespace CarthageLink.Server.Repositories
         Task CreateLicenseAsync(License license);
         Task<License> GetLicenseByKeyAsync(string licenseKey);
         Task<License> GetByIdAsync(string id);
+        Task<License> GetByFactoryIdAsync(string FactoryId);
+
         Task<IEnumerable<License>> GetAllLicensesAsync();
         Task UpdateStatusAsync(string id, LicenseStatus status);
         //Task<License> UpdateAsync(String id, Dictionary<string, object> updateFields);
@@ -45,6 +47,12 @@ namespace CarthageLink.Server.Repositories
             {
                 return await _license.Find(l => l.Id == id).FirstOrDefaultAsync();
             }
+            // LicenseRepository.cs or your repo class
+            public async Task<License> GetByFactoryIdAsync(string FactoryId)
+            {
+                return await _license.Find(l => l.FactoryId == FactoryId).FirstOrDefaultAsync();
+            }
+
             public async Task<IEnumerable<License>> GetAllLicensesAsync()
             {
                 return await _license.Find(Builders<License>.Filter.Empty).ToListAsync();

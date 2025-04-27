@@ -41,22 +41,31 @@ export function AuthProvider({ children }) {
 
       const data = await response.json();
       console.log("API Response:", data);
-  
+      const getRoleName = (roleNum) => {
+        switch(roleNum) {
+            case 0: return "SuperAdmin";
+            case 1: return "FactoryAdmin";
+            case 2: return "Operator";
+            default: return "Unknown";
+        }};
       // EXPLICITLY include role
       const userData = {
         name: data.name,
       email: data.email,
       phone: data.phone,
-      role: data.role,
+      role: getRoleName(data.role), // Convert to string for display
       token: data.token,
-      factoryId: data.factoryId}
+      factoryId: data.factoryId,
+        deviceId:data.assignedDevices
+    }
   
       // Save to localStorage
       localStorage.setItem("token", data.token);
       localStorage.setItem("userData", JSON.stringify(userData));
       setUser(userData); // Update state
-  
+  //window.alert("Login successfully")
       return { success: true, user: userData };
+
     } catch (error) {
       console.error("Login error:", error);
       return { success: false, error: error.message };
@@ -106,24 +115,27 @@ export function AuthProvider({ children }) {
   };
 
   // Add a function to check specific roles
-  const hasRole = (requiredRole) => {
+  /*const hasRole = (requiredRole) => {
     if (!user) return false;
     return user.role === requiredRole;
   };
-  const role = user?.role;
+  const role = user?.role;*/
 
   const value = {
     user,
     loading,
     isAuthenticated: !!user,
-  isSuperAdmin: role === "SuperAdmin",
-  isFactoryAdmin: role === "FactoryAdmin",
-  isOperator: role === "Operator",
-    hasRole,
+    isSuperAdmin: user?.roleNumber === 0,
+    isFactoryAdmin: user?.roleNumber === 1,
+    isOperator: user?.roleNumber === 2,
+    hasRole: (requiredRoleNumber) => {
+        if (!user) return false;
+        return user.roleNumber === requiredRoleNumber;
+    },
     login,
     register,
     logout
-  };
+};
 
   return (
     <AuthContext.Provider value={value}>

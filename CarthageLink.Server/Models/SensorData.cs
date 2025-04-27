@@ -1,24 +1,36 @@
-﻿using MongoDB.Bson.Serialization.Attributes;
-using MongoDB.Bson;
+﻿using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
+
 
 namespace CarthageLink.Server.Models
 {
+    public enum SensorType
+    {
+        Temperature,
+        Humidity,
+        Speedometer,
+        Accelerometer,
+        Waterlevel
+    }
+
+
     public class SensorData
     {
         [BsonId]
-        [BsonRepresentation(BsonType.ObjectId)] // This is fine for the Id
+        [BsonRepresentation(BsonType.ObjectId)]
         public string? Id { get; set; }
 
+        [BsonElement("timestamp")]
+        //[BsonDateTimeOptions(Kind = DateTimeKind.Utc)]
+        public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+
         [BsonElement("deviceId")]
+        [BsonRepresentation(BsonType.ObjectId)]
         public string DeviceId { get; set; } = string.Empty;
 
-        [BsonElement("sensor")]
-        public string Sensor { get; set; } = string.Empty; // Match the "sensor" field in the payload
+        [BsonElement("data")]
+        public Dictionary<string, double> Data { get; set; } = new Dictionary<string, double>();
+        public SensorType SensorType { get; set; } 
 
-        [BsonElement("value")]
-        public double Value { get; set; } // Match the "value" field in the payload
-
-        [BsonElement("timestamp")]
-        public DateTime Timestamp { get; set; }
     }
 }

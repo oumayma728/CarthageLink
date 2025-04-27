@@ -7,9 +7,9 @@ namespace CarthageLink.Server.Models
 {
     public enum UserRole
     {
-        SuperAdmin,
-        FactoryAdmin,
-        Operator
+        SuperAdmin =0,
+        FactoryAdmin=1,
+        Operator=2
     }
     public class User
     {

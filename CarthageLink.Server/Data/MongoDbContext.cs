@@ -1,8 +1,11 @@
-﻿using CarthageLink.Server.Models;
-using MongoDB.Bson;
-using MongoDB.Driver;
+﻿using CarthageLink.Server.Data;
+using CarthageLink.Server.Models;
+using DnsClient.Internal;
 using Microsoft.Extensions.Logging;
-using CarthageLink.Server.Data;
+using Microsoft.Extensions.Options;
+using MongoDB.Bson;
+
+using MongoDB.Driver;
 namespace CarthageLink.Server.Data
 {
     public class MongoDbContext
@@ -12,24 +15,22 @@ namespace CarthageLink.Server.Data
         private readonly ILogger<MongoDbContext> _logger;
         private readonly DatabaseSettings _databaseSettings;
 
-        public MongoDbContext(DatabaseSettings databaseSettings, ILogger<MongoDbContext> logger)
-        {
-            _logger = logger;
 
-            // Use values from DatabaseSettings
-            var connectionString = databaseSettings.Connection;
-            var databaseName = databaseSettings.DatabaseName;
+public MongoDbContext(IOptions<DatabaseSettings> databaseSettings, ILogger<MongoDbContext> logger)
+    {
+        _logger = logger;
+        _databaseSettings = databaseSettings.Value;
 
-            // Initialize MongoDB client and database
-            _client = new MongoClient(connectionString);
-            _database = _client.GetDatabase(databaseName);
+        var connectionString = _databaseSettings.Connection;
+        var databaseName = _databaseSettings.DatabaseName;
 
-            // Uncomment this line if you want to check the connection status during initialization
-            // Task.Run(async () => await InitializeAsync());
-        }
+        _client = new MongoClient(connectionString);
+        _database = _client.GetDatabase(databaseName);
+    }
 
-        // MongoDB collections
-        public IMongoCollection<User> User => _database.GetCollection<User>("User");
+
+    // MongoDB collections
+    public IMongoCollection<User> User => _database.GetCollection<User>("User");
         public IMongoCollection<Factory> Factory => _database.GetCollection<Factory>("Factory");
         public IMongoCollection<Device> Device => _database.GetCollection<Device>("Device");
         public IMongoCollection<License> License => _database.GetCollection<License>("License");

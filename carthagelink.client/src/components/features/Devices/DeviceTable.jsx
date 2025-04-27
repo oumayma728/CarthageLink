@@ -1,10 +1,11 @@
 import PropTypes from 'prop-types';
 import { Link } from "react-router-dom";
 import { Edit3, Trash2, Eye } from "lucide-react";
-import DeviceStatusButton from './DeviceStatusButton';
+import DeviceStatusButton from './DeviceStatusButton.jsx';
 import { useState,useEffect } from 'react';
 import { DataFilter } from '../../ui/DataFilter'; // Import the reusable filter component
 import Pagination from '../../ui/Pagination.jsx';
+
 export default function DevicesTable({ devices, isLoading, onDelete, onStatusChange, updatingStatusId }) {
   const [filteredDevices, setFilteredDevices] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);

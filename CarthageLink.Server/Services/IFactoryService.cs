@@ -24,6 +24,7 @@ namespace CarthageLink.Server.Services
 
         // Delete factory
         Task<bool> DeleteFactoryAsync(string id);
+        Task<IEnumerable<User>> GetFactoryUsersAsync(string factoryId);
     }
     // The UserService class implements IUserService
     public class FactoryService : IFactoryService
@@ -60,12 +61,21 @@ namespace CarthageLink.Server.Services
             // Return the generated license key
             return licenseKey;
         }
-      
+
         // Get All Factories
         public async Task<IEnumerable<Factory>> GetAllFactoriesAsync()
         {
-            return await _factoryRepository.GetAllFactoriesAsync();
+            var factories = await _factoryRepository.GetAllFactoriesAsync();
+
+            // Convert to a List to use Count
+            var factoryList = factories.ToList();
+
+            if (factoryList.Count == 0)
+                throw new Exception("No factories found.");
+
+            return factoryList;
         }
+
 
         // Get Factory by ID
         public async Task<Factory?> GetFactoryByIdAsync(string id)
@@ -120,7 +130,16 @@ namespace CarthageLink.Server.Services
                 return []; // Return empty list if factory ID is invalid.
             }
 
-            return await _deviceRepository.GetDevicesByFactoryIdAsync(factoryId);
+            return await _deviceRepository.GetByFactoryIdAsync(factoryId);
+        }
+        public async Task<IEnumerable<User>> GetFactoryUsersAsync(string factoryId)
+        {
+            if (string.IsNullOrEmpty(factoryId))
+            {
+                return []; // Return empty list if factory ID is invalid.
+            }
+
+            return await _userRepository.GetAllFactoryUsersAsync(factoryId);
         }
 
         public async Task UpdateFactoryAdminIdAsync(string factoryId, string adminId)
