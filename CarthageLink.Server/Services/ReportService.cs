@@ -1,5 +1,6 @@
 ﻿using CarthageLink.Server.Models;
 using CarthageLink.Server.Repositories;
+using System.Collections.Concurrent;
 
 namespace CarthageLink.Server.Services
 {
@@ -10,6 +11,8 @@ namespace CarthageLink.Server.Services
         Task<List<WeeklyReport>> GetAllReportsAsync();
         Task<List<WeeklyReport>> GetReportsByDeviceIdAsync(string deviceId);
         Task<WeeklyReport> GetReportByIdAsync(string id);
+        Task<bool> SaveIssueReportAsync(IssueReport issue);
+        Task<List<IssueReport>> GetRecentIssuesAsync(int count = 10);
     }
 
 
@@ -28,7 +31,44 @@ namespace CarthageLink.Server.Services
             _alertService = alertService;
             _ReportRepository = reportRepository;
         }
+        private static readonly ConcurrentDictionary<string, IssueReport> _issueReports = new();
+        private static readonly object _lock = new();
+        public async Task<bool> SaveIssueReportAsync(IssueReport issue)
+        {
+            try
+            {
+                // Basic validation
+                if (string.IsNullOrWhiteSpace(issue.Type) ||
+                    string.IsNullOrWhiteSpace(issue.Description))
+                {
+                    return false;
+                }
 
+                // Set additional properties
+                issue.Id = Guid.NewGuid().ToString();
+                issue.Timestamp = DateTime.UtcNow;
+
+                // Add to in-memory store
+                lock (_lock)
+                {
+                    _issueReports.TryAdd(issue.Id, issue);
+                }
+
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public async Task<List<IssueReport>> GetRecentIssuesAsync(int count = 10)
+        {
+            return _issueReports.Values
+                .OrderByDescending(x => x.Timestamp)
+                .Take(count)
+                .ToList();
+        }
         public async Task<WeeklyReport> GenerateReportForPeriodAsync(DateTime startDate, DateTime endDate)
         {
             if (endDate < startDate)

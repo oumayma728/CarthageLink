@@ -63,7 +63,6 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IFactoryService, FactoryService>();
 builder.Services.AddScoped<ILicenseService, LicenseService>();
 builder.Services.AddScoped<IDeviceService, DeviceService>();
-builder.Services.AddScoped<IInsightsService, InsightsService>();
 
 builder.Services.AddCors(options =>
 {

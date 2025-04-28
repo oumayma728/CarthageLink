@@ -3,9 +3,7 @@ import StatCard from "../../components/Layouts/Dashboard/StatCard";
 import ActivityFeed from "../../components/Layouts/Dashboard/ActivityFeed";
 import Header from "../../components/Layouts/Dashboard/DashboardHeader";
 import useDashboardData from "../../hooks/useDashboardData";
-import LineChart from "../../components/Charts/LineChart";
 import DeviceOverview from "../../components/features/Devices/deviceOverview.jsx";
-
 export default function DashboardPage() {
   const { 
     data: dashboardData = {}, 
@@ -65,11 +63,6 @@ export default function DashboardPage() {
           {/* Charts and Map Row */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             <div className="h-full">
-              <LineChart />
-              <LineChart/>
-            </div>
-            <div className="h-full">
-
             </div>
           </div>
 

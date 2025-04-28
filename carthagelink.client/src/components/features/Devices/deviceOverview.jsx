@@ -68,14 +68,14 @@ PieCenterLabel.propTypes = {
 export default function DeviceOverview() {
   // Example data - replace with your own backend/API logic
   const deviceStatus = [
-    { id: 0, value: 18000, label: 'Online', color: '#4CAF50' },
-    { id: 1, value: 8000, label: 'Offline', color: '#BE3053' },
+    { id: 0, value: 1, label: 'Online', color: '#4CAF50' },
+    { id: 1, value: 1, label: 'Offline', color: '#BE3053' },
   ];
 
   const networkTypes = [
-    { id: 0, value: 4000, label: 'LoRa', color: '#2196F3' },
-    { id: 1, value: 8000, label: 'NB-IoT', color: '#FF9800' },
-    { id: 2, value: 14000, label: 'WiFi', color: '#9C27B0' },
+    { id: 0, value: 1, label: 'LoRa', color: '#2196F3' },
+    { id: 1, value: 1, label: 'NB-IoT', color: '#FF9800' },
+    { id: 2, value: 1, label: 'WiFi', color: '#9C27B0' },
   ];
 
   return (
@@ -92,7 +92,7 @@ export default function DeviceOverview() {
                 data: deviceStatus,
                 innerRadius: 50,
                 outerRadius: 80,
-                highlightScope: { fade: 'global', highlight: 'item' },
+                //highlightScope: { fade: 'global', highlight: 'item' },
                 faded: { innerRadius: 60, additionalRadius: -10, color: 'gray' },
                 //arcLabel: (item) => `${item.label} (${item.value})`,
                 
@@ -110,7 +110,7 @@ export default function DeviceOverview() {
             width={400}
             height={300}
           >
-            <PieCenterLabel primaryText="26K" secondaryText="Total" />
+            <PieCenterLabel primaryText="1" secondaryText="Total" />
           </PieChart>
         </Box>
       </CardContent>

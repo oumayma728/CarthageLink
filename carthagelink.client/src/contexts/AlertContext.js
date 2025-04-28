@@ -10,18 +10,36 @@ const SENSORS = {
   2: { name: 'Speedometer', unit: 'km/h', color: '#45B7D1', icon: 'gauge', thresholds: { critical: 120, warning: 90 } },
   3: { name: 'Accelerometer', unit: 'm/s²', color: '#FFA07A', icon: 'move-3d', thresholds: { critical: 15, warning: 10 } },
   4: { name: 'Waterlevel', unit: 'cm', color: '#A28DFF', icon: 'waves', thresholds: { critical: 200, warning: 150 } },
-  //System: { name: 'System', unit: '', color: '#FFA500', icon: 'alert-triangle', thresholds: { critical: 1, warning: 0 } }
+  5: { name: 'System', unit: '', color: '#FFA500', icon: 'alert-triangle', thresholds: { critical: 1, warning: 0 } }
 };
 
 export const AlertProvider = ({ children }) => {
   const [alerts, setAlerts] = useState([]);
   const [latestAlert, setLatestAlert] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [connection, setConnection] = useState(null);
+
+  const reportIssue = async (type, description) => {
+    try {
+      const response = await axios.post('https://localhost:7086/api/Issues', {
+        type,
+        description,
+        reporter: "User" // You can get this from auth context
+      });
+      
+      if (response.status === 200) {
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error reporting issue:', error);
+      return false;
+    }
+  };
 
   const processAlert = (rawAlert) => {
     if (!rawAlert) return null;
     
-    // Handle different alert formats (API vs SignalR)
     const normalizedAlert = {
       id: rawAlert.id || rawAlert._id || `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       deviceId: rawAlert.deviceId || rawAlert.DeviceId || 'unknown',
@@ -31,17 +49,19 @@ export const AlertProvider = ({ children }) => {
       timestamp: rawAlert.timestamp || rawAlert.Timestamp || new Date().toISOString()
     };
   
-    // System alerts handling
-    if (normalizedAlert.message?.includes("Missing sensor data")) {
+    // System alerts handling (including issues)
+    if (normalizedAlert.sensorType === 5 || normalizedAlert.message?.includes("Missing sensor data")) {
       return {
         ...normalizedAlert,
-        sensorType: 'System',
-        sensorName: 'System Warning',
+        sensorType: 5,
+        sensorName: 'System Issue',
         unit: '',
         value: 0,
-        severity: 'Warning',
+        severity: 'Critical',
         isSystemAlert: true,
-        time: new Date(normalizedAlert.timestamp).toLocaleTimeString()
+        time: new Date(normalizedAlert.timestamp).toLocaleTimeString(),
+        icon: SENSORS[5].icon,
+        color: SENSORS[5].color
       };
     }
   
@@ -52,7 +72,8 @@ export const AlertProvider = ({ children }) => {
           'humidity': 1,
           'speedometer': 2,
           'accelerometer': 3,
-          'waterlevel': 4
+          'waterlevel': 4,
+          'system': 5
         }[normalizedAlert.sensorType.toLowerCase()] 
       : normalizedAlert.sensorType;
   
@@ -108,16 +129,16 @@ export const AlertProvider = ({ children }) => {
   const generateTrendData = () => Array(5).fill(0).map(() => Math.random() * 100);
 
   useEffect(() => {
-    const connection = new signalR.HubConnectionBuilder()
+    const newConnection = new signalR.HubConnectionBuilder()
       .withUrl("https://localhost:7086/alertHub")
       .withAutomaticReconnect()
       .build();
 
-    connection.on("ReceiveAlert", (alert) => {
+    newConnection.on("ReceiveAlert", (alert) => {
       const processedAlert = processAlert(alert);
       if (processedAlert) {
         setLatestAlert(processedAlert);
-        setAlerts(prev => [processedAlert, ...prev]);
+        setAlerts(prev => [processedAlert, ...prev].slice(0, 100)); // Limit to 100 alerts
       }
     });
 
@@ -137,14 +158,17 @@ export const AlertProvider = ({ children }) => {
       }
     };
 
-    connection.start()
+    newConnection.start()
       .then(() => {
         console.log("SignalR Connected");
+        setConnection(newConnection);
         fetchAlerts();
       })
       .catch(err => console.error("SignalR Connection Error:", err));
 
-    return () => connection.stop();
+    return () => {
+      newConnection.stop();
+    };
   }, []);
 
   return (
@@ -155,7 +179,9 @@ export const AlertProvider = ({ children }) => {
       generateSensorColor,
       formatRelativeTime,
       generateTrendData,
-      SENSORS
+      SENSORS,
+      reportIssue,
+      connection
     }}>
       {children}
     </AlertContext.Provider>

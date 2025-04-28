@@ -1,4 +1,5 @@
 ﻿using MongoDB.Bson;
+using System;
 
 namespace CarthageLink.Server.Models
 {
@@ -10,5 +11,9 @@ namespace CarthageLink.Server.Models
         public string Message { get; set; } = string.Empty;
         public double Value { get; set; }
         public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+
+        // Optional fields for issue reporting
+        public string SensorName { get; set; } = string.Empty;
+        public string Severity { get; set; } = string.Empty;
     }
 }

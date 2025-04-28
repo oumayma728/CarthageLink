@@ -1,14 +1,16 @@
-import React from 'react';
+import 'leaflet/dist/leaflet.css';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
+import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
+import markerIcon from 'leaflet/dist/images/marker-icon.png';
+import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 
 // Fix for default marker icons
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
-  iconRetinaUrl: require('leaflet/dist/images/marker-icon-2x.png'),
-  iconUrl: require('leaflet/dist/images/marker-icon.png'),
-  shadowUrl: require('leaflet/dist/images/marker-shadow.png'),
+  iconRetinaUrl: markerIcon2x.src,
+  iconUrl: markerIcon.src,
+  shadowUrl: markerShadow.src,
 });
 
 // Dummy device positions (lat/lng of Tunisia cities)
@@ -21,9 +23,14 @@ const devices = [
 const MapComponent = () => {
   return (
     <div className="h-[500px] w-full rounded-xl overflow-hidden shadow-xl">
-      <MapContainer center={[34.8, 10.1]} zoom={6.5} style={{ height: '100%', width: '100%' }}>
+      <MapContainer 
+        center={[34.8, 10.1]} 
+        zoom={6.5} 
+        style={{ height: '100%', width: '100%' }}
+        scrollWheelZoom={false}
+      >
         <TileLayer
-          attribution='&copy; OpenStreetMap contributors'
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         {devices.map(device => (

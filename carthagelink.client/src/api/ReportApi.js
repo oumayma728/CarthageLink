@@ -9,7 +9,19 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
 });
-
+export const reportIssue = async (issueType, description) => {
+  try {
+    const response = await axios.post('https://localhost:7086/api/Issues', {
+      type: issueType,
+      description: description,
+      reporter: "Operator" // You can get this from user context
+    });
+    return response.status === 200;
+  } catch (error) {
+    console.error('Error reporting issue:', error);
+    return false;
+  }
+};
 export const generateReport = async (startDate, endDate) => {
   try {
     const response = await axios.post('https://localhost:7086/api/Reports/generate', {

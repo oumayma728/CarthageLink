@@ -284,7 +284,6 @@ export default function Navbar({
         </div>
       </nav>
 
-      {/* Report Issue Modal */}
       {showReportModal && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center px-4">
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg w-full max-w-md p-6 relative animate-fadeIn">
@@ -325,13 +324,18 @@ export default function Navbar({
               </button>
               <button
                 onClick={async () => {
-                  const success = await reportIssue(issueType, issueDesc);
-                  if (success) {
-                    setShowReportModal(false);
-                    setIssueType("");
-                    setIssueDesc("");
-                    setMessageSent(true);
-                    setTimeout(() => setMessageSent(false), 3000);
+                  try {
+                    const success = await reportIssue(issueType, issueDesc);
+                    if (success) {
+                      setShowReportModal(false);
+                      setIssueType("");
+                      setIssueDesc("");
+                      setMessageSent(true);
+                      setTimeout(() => setMessageSent(false), 3000);
+                    }
+                  } catch (error) {
+                    console.error('Error reporting issue:', error);
+                    setMessageSent(false);
                   }
                 }}
                 disabled={!issueType || !issueDesc.trim()}
@@ -351,6 +355,7 @@ export default function Navbar({
         </div>
       )}
 
+      {/* Success Message */}
       {messageSent && (
         <div className="fixed bottom-6 right-6 z-50 bg-green-500 text-white px-4 py-3 rounded-lg shadow-lg animate-fadeIn">
           Issue report sent successfully!
@@ -358,7 +363,7 @@ export default function Navbar({
       )}
     </>
   );
-}
+};
 
 Navbar.propTypes = {
   darkMode: PropTypes.bool.isRequired,

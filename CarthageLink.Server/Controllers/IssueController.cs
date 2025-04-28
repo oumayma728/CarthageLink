@@ -1,43 +1,68 @@
-﻿// IssuesController.cs
-using CarthageLink.Server.Hubs;
+﻿using CarthageLink.Server.Hubs;
+using CarthageLink.Server.Models;
+using CarthageLink.Server.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
+using System;
+using System.Threading.Tasks;
 
 [ApiController]
 [Route("api/[controller]")]
 public class IssuesController : ControllerBase
 {
     private readonly IHubContext<AlertHub> _hubContext;
+    private readonly IReportService _reportService;
 
-    public IssuesController(IHubContext<AlertHub> hubContext)
+    public IssuesController(
+        IHubContext<AlertHub> hubContext,
+        IReportService reportService)
     {
         _hubContext = hubContext;
+        _reportService = reportService;
     }
 
     [HttpPost]
     public async Task<IActionResult> ReportIssue([FromBody] IssueReport issue)
     {
-        // Save to database if needed
-
-        // Broadcast via SignalR
-        await _hubContext.Clients.All.SendAsync("ReceiveAlert", new
+        try
         {
-            DeviceId = "System",
-            SensorType = 0,
-            SensorName = "System Issue",
-            Value = issue.Type,
-            Message = $"{issue.Type}: {issue.Description}",
-            Timestamp = DateTime.UtcNow,
-            Severity = "High"
-        });
+            // Save the issue
+            var success = await _reportService.SaveIssueReportAsync(issue);
+            if (!success)
+            {
+                return BadRequest("Invalid issue data");
+            }
 
-        return Ok();
+            // Broadcast via SignalR using your existing Alert model
+            await _hubContext.Clients.All.SendAsync("ReceiveAlert", new Alert
+            {
+                DeviceId = "System",
+                SensorType = 0, // Special type for issues
+                Message = $"{issue.Type}: {issue.Description}",
+                Value = 0, // Default value for issues
+                Timestamp = DateTime.UtcNow
+                // SensorName and Severity are optional
+            });
+
+            return Ok();
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { error = ex.Message });
+        }
     }
-}
 
-public class IssueReport
-{
-    public string Type { get; set; }
-    public string Description { get; set; }
-    public string Reporter { get; set; }
+    [HttpGet("recent")]
+    public async Task<IActionResult> GetRecentIssues([FromQuery] int count = 10)
+    {
+        try
+        {
+            var issues = await _reportService.GetRecentIssuesAsync(count);
+            return Ok(issues);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { error = ex.Message });
+        }
+    }
 }
