@@ -3,7 +3,6 @@ import DashboardLayout from "../../components/Layouts/DashboardLayout";
 import LicensesTable from "../../components/features/licenses/LicensesTable";
 import useLicenses from "../../hooks/useLicenses";
 import DeleteModal from "../../components/ui/DeleteModal";
-import { Link } from "react-router-dom";
 export default function LicensePage() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedLicenseId, setSelectedLicenseId] = useState(null);
@@ -30,12 +29,7 @@ export default function LicensePage() {
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
           <h1 className="text-xl font-bold mb-2 sm:mb-0 dark:text-white">Licenses</h1>
-          <Link 
-            to="/add-license"
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm"
-          >
-            Add License
-          </Link>
+        
         </div>
 
         {error && (

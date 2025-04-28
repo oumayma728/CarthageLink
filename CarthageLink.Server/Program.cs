@@ -4,6 +4,7 @@ using CarthageLink.Server.Repositories;
 using CarthageLink.Server.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using MongoDB.Driver;
@@ -31,12 +32,15 @@ builder.Services.AddSingleton<IMongoClient>(sp =>
 });
 
 // Register MongoDatabase as Singleton
+// Database setup
+builder.Services.Configure<DatabaseSettings>(builder.Configuration.GetSection("DatabaseSettings"));
+builder.Services.AddSingleton<IMongoClient>(sp =>
+    new MongoClient(sp.GetRequiredService<IOptions<DatabaseSettings>>().Value.Connection));
 builder.Services.AddSingleton<IMongoDatabase>(sp =>
-{
-    var mongoClient = sp.GetRequiredService<IMongoClient>();
-    var settings = sp.GetRequiredService<IOptions<DatabaseSettings>>().Value;
-    return mongoClient.GetDatabase(settings.DatabaseName); // MongoDatabase
-});
+    sp.GetRequiredService<IMongoClient>().GetDatabase(
+        sp.GetRequiredService<IOptions<DatabaseSettings>>().Value.DatabaseName));
+
+// Services
 
 // Add JWT TokenService
 builder.Services.AddSingleton<ITokenService, TokenService>(); // stateless service, no need to use AddScoped

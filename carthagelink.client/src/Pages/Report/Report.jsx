@@ -1,168 +1,205 @@
-// src/components/ReportsDashboard.jsx
-import React, { useEffect, useState } from 'react';
-import { Container, Typography, Grid, Card, CardContent, CircularProgress, Alert } from '@mui/material';
-import { getAllReports } from '../../api/ReportApi';
-import { format } from 'date-fns';
-import { DataGrid } from '@mui/x-data-grid';
-import { useNavigate } from 'react-router-dom';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { useState } from 'react';
+import { Container, Alert, TextField, Button, Box, Typography, Paper } from '@mui/material';
+import DashboardLayout from "../../components/Layouts/DashboardLayout";
+import { generateReport } from '../../api/ReportApi';
+import jsPDF from 'jspdf';  // Import jsPDF
 
-// Helper function to check and return valid date
-const formatDate = (date) => {
-  const validDate = new Date(date);
-  return validDate instanceof Date && !isNaN(validDate) ? validDate : null;
+const ReportsPage = () => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [generatedReport, setGeneratedReport] = useState(null);
+  const [showReport, setShowReport] = useState(false);
+
+  const handleGenerateReport = async () => {
+    if (!startDate || !endDate) {
+        setError("Please select both start and end dates!");
+        return;
+    }
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    if (start > end) {
+        setError("Start date must be before end date");
+        return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+        const reportData = await generateReport(start, end);
+
+        if (!reportData) {
+            setError("No data available for the selected date range");
+            setShowReport(false);
+            return;
+        }
+
+        // Transform data if needed to match frontend expectations
+        const transformedData = {
+            startDate: reportData.startDate,
+            endDate: reportData.endDate,
+            totalSensorDataPoints: reportData.totalSensorDataPoints,
+            totalAlerts: reportData.totalAlerts,
+            mostCommonAlertType: reportData.mostCommonAlertType,
+            averageSensorValues: reportData.averageSensorValues || {}
+        };
+
+        setGeneratedReport(transformedData);
+        setShowReport(true);
+    } catch (err) {
+        setError(err.message || "Failed to generate report");
+        setShowReport(false);
+    } finally {
+        setLoading(false);
+    }
 };
 
-const ReportsDashboard = () => {
-  const [reports, setReports] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const navigate = useNavigate();
+// Enhanced PDF generation
+const generatePDF = () => {
+    if (!generatedReport) return;
 
-  useEffect(() => {
-    const fetchReports = async () => {
-      try {
-        const data = await getAllReports();
-        setReports(data);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
+    const doc = new jsPDF();
+    
+    // Add logo or header
+    doc.setFontSize(20);
+    doc.setTextColor(40, 53, 147);
+    doc.text("Industrial Monitoring Report", 105, 20, { align: 'center' });
+    
+    // Report metadata
+    doc.setFontSize(12);
+    doc.setTextColor(0, 0, 0);
+    doc.text(`Report Period: ${formatDate(startDate)} to ${formatDate(endDate)}`, 20, 40);
+    doc.line(20, 45, 190, 45);
+    
+    // Key metrics
+    doc.setFontSize(14);
+    doc.text("Key Metrics", 20, 60);
+    
+    doc.setFontSize(12);
+    doc.text(`• Total Sensor Data Points: ${generatedReport.totalSensorDataPoints || 0}`, 20, 70);
+    doc.text(`• Total Alerts: ${generatedReport.totalAlerts || 0}`, 20, 80);
+    doc.text(`• Most Common Alert: ${generatedReport.mostCommonAlertType || "None"}`, 20, 90);
+    
+    // Sensor averages
+    doc.setFontSize(14);
+    doc.text("Average Sensor Values", 20, 110);
+    
+    if (generatedReport.averageSensorValues) {
+        let y = 120;
+        Object.entries(generatedReport.averageSensorValues).forEach(([sensor, value]) => {
+            doc.text(`• ${sensor}: ${value.toFixed(2)}`, 20, y);
+            y += 10;
+        });
+    }
+    
+    // Footer
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    doc.text(`Generated on ${new Date().toLocaleDateString()}`, 105, 280, { align: 'center' });
+    
+    doc.save(`Report_${startDate}_to_${endDate}.pdf`);
+};
 
-    fetchReports();
-  }, []);
+// Helper function
+const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString();
+};
 
-  const columns = [
-    { field: 'id', headerName: 'ID', width: 100 },
-    {
-      field: 'dateRange',
-      headerName: 'Date Range',
-      width: 250,
-      valueGetter: (params) => {
-        const { row } = params;
-        // Check if row and the required fields are valid
-        if (row && row.StartDate && row.EndDate) {
-          const startDate = formatDate(row.StartDate);
-          const endDate = formatDate(row.EndDate);
-          if (startDate && endDate) {
-            return `${format(startDate, 'MMM d, yyyy')} - ${format(endDate, 'MMM d, yyyy')}`;
-          }
-        }
-        return 'Invalid Date Range'; // Fallback if the dates are not valid
-      },
-    },
-    { field: 'TotalSensorDataPoints', headerName: 'Data Points', width: 150 },
-    { field: 'TotalAlerts', headerName: 'Alerts', width: 150 },
-    {
-      field: 'MostCommonAlertType',
-      headerName: 'Common Alert',
-      width: 200,
-    },
-  ];
-  
-
-  const handleRowClick = (params) => {
-    navigate(`/report/${params.row.id}`);
-  };
-
-  if (loading) {
-    return (
-      <Container sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
-        <CircularProgress />
-      </Container>
-    );
-  }
-
-  if (error) {
-    return (
-      <Container>
-        <Alert severity="error">{error}</Alert>
-      </Container>
-    );
-  }
-
-  // Prepare data for the chart
-  const chartData = reports
-    .map((report) => {
-      const startDate = formatDate(report.StartDate);
-      if (startDate) {
-        return {
-          name: format(startDate, 'MMM d'),
-          dataPoints: report.TotalSensorDataPoints,
-          alerts: report.TotalAlerts,
-        };
-      }
-      return null; // Skip invalid reports
-    })
-    .filter((item) => item !== null); // Filter out invalid items
 
   return (
-    <Container maxWidth="xl" sx={{ mt: 4 }}>
-      <Typography variant="h4" component="h1" gutterBottom>
-        Weekly Reports Dashboard
-      </Typography>
+    <DashboardLayout>
+      <Container maxWidth="sm" sx={{ py: 4 }}>
+        {/* Date Range Inputs */}
+        <div className="mb-4">
+          <TextField
+            label="Start Date"
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            InputLabelProps={{
+              shrink: true,
+            }}
+            fullWidth
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            label="End Date"
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            InputLabelProps={{
+              shrink: true,
+            }}
+            fullWidth
+          />
+        </div>
 
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} md={6}>
-          <Card elevation={3}>
-            <CardContent>
+        <Button
+          onClick={handleGenerateReport}
+          variant="contained"
+          color="primary"
+          disabled={loading}
+          fullWidth
+        >
+          {loading ? "Generating..." : "Generate Report"}
+        </Button>
+
+        {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
+
+        {/* Report Summary */}
+        {showReport && generatedReport && (
+          <Paper sx={{ mt: 4, p: 4 }}>
+            <Typography variant="h5" gutterBottom>
+              Report Summary
+            </Typography>
+
+            <Typography variant="body1" sx={{ mt: 2 }}>
+              <strong>Total Sensor Data Points:</strong> {generatedReport.totalSensorDataPoints || 0}
+            </Typography>
+
+            <Typography variant="body1" sx={{ mt: 1 }}>
+              <strong>Total Alerts:</strong> {generatedReport.totalAlerts || 0}
+            </Typography>
+
+            <Typography variant="body1" sx={{ mt: 1 }}>
+              <strong>Most Common Alert Type:</strong> {generatedReport.mostCommonAlertType || "None"}
+            </Typography>
+
+            <Box sx={{ mt: 4 }}>
               <Typography variant="h6" gutterBottom>
-                Data Points & Alerts Trend
+                Average Sensor Values
               </Typography>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="dataPoints" fill="#4a6fa5" name="Data Points" />
-                  <Bar dataKey="alerts" fill="#ff7e5f" name="Alerts" />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={6}>
-          <Card elevation={3}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Summary Statistics
-              </Typography>
-              {reports.length > 0 && (
-                <div>
-                  <Typography>Total Reports: {reports.length}</Typography>
-                  <Typography>
-                    Latest Report: {formatDate(reports[0].StartDate) ? format(new Date(reports[0].StartDate), 'MMM d, yyyy') : 'Invalid Date'} -{' '}
-                    {formatDate(reports[0].EndDate) ? format(new Date(reports[0].EndDate), 'MMM d, yyyy') : 'Invalid Date'}
-                  </Typography>
-                  <Typography>
-                    Average Data Points: {Math.round(reports.reduce((acc, r) => acc + r.TotalSensorDataPoints, 0) / reports.length)}
-                  </Typography>
-                  <Typography>
-                    Average Alerts: {Math.round(reports.reduce((acc, r) => acc + r.TotalAlerts, 0) / reports.length)}
-                  </Typography>
-                </div>
+              {generatedReport.averageSensorValues && Object.keys(generatedReport.averageSensorValues).length > 0 ? (
+                Object.entries(generatedReport.averageSensorValues).map(([sensor, value], index) => (
+                  <Box key={index} sx={{ mb: 2 }}>
+                    <Typography variant="body1">
+                      <strong>{sensor}:</strong> {value}
+                    </Typography>
+                  </Box>
+                ))
+              ) : (
+                <Typography variant="body2">No sensor data available for the selected date range.</Typography>
               )}
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+            </Box>
 
-      <div style={{ height: 400, width: '100%' }}>
-        <DataGrid
-          rows={reports}
-          columns={columns}
-          pageSize={5}
-          rowsPerPageOptions={[5, 10, 20]}
-          onRowClick={handleRowClick}
-          sx={{ cursor: 'pointer' }}
-        />
-      </div>
-    </Container>
+            {/* Button to download PDF */}
+            <Button
+              variant="contained"
+              color="primary"
+              sx={{ mt: 4 }}
+              onClick={generatePDF}
+            >
+              Download PDF
+            </Button>
+          </Paper>
+        )}
+      </Container>
+    </DashboardLayout>
   );
 };
 
-export default ReportsDashboard;
+export default ReportsPage;

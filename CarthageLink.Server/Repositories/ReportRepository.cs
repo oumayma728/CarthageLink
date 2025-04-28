@@ -1,5 +1,6 @@
 ﻿using CarthageLink.Server.Models;
 using MongoDB.Driver;
+using System.Threading.Tasks;
 
 namespace CarthageLink.Server.Repositories
 {
@@ -7,6 +8,9 @@ namespace CarthageLink.Server.Repositories
     {
         Task InsertAsync(WeeklyReport report);
         Task<List<WeeklyReport>> GetAllAsync();
+        Task<List<WeeklyReport>> GetReportsByDeviceIdAsync(string deviceId);
+        Task<WeeklyReport> GetReportByIdAsync(string id);
+
     }
     public class ReportRepository : IReportRepository
     {
@@ -26,6 +30,19 @@ namespace CarthageLink.Server.Repositories
         {
             return await _report.Find(_ => true).ToListAsync();
         }
+        public async Task<List<WeeklyReport>> GetReportsByDeviceIdAsync(string deviceId)
+        {
+            var filter = Builders<WeeklyReport>.Filter.Eq(r => r.DeviceId, deviceId);
+            return await _report.Find(filter).ToListAsync();
+        }
+        public async Task<WeeklyReport> GetReportByIdAsync(string id)
+        {
+            var filter = Builders<WeeklyReport>.Filter.Eq(r => r.Id, id);
+            return await _report.Find(filter).FirstOrDefaultAsync();
+        }
+
+
+
     }
 
 }

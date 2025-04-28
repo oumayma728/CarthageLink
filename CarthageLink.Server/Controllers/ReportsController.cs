@@ -27,4 +27,18 @@ public class ReportsController : ControllerBase
         var reports = await _reportService.GetAllReportsAsync();
         return Ok(reports);
     }
+    [HttpGet("id")]
+    public async Task<IActionResult> GetReportsById([FromRoute] string id)
+    {
+        var reports = await _reportService.GetReportByIdAsync(id);
+        return Ok(reports);
+    }
+    [HttpGet("device/{deviceId}")]
+    public async Task<IActionResult> GetReportsByDeviceId([FromRoute] string deviceId)
+    {
+        var reports = await _reportService.GetReportsByDeviceIdAsync(deviceId);
+        return Ok(reports);
+    }
+
+
 }

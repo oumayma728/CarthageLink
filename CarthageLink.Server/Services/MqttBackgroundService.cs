@@ -1,8 +1,8 @@
-﻿
-using CarthageLink.Server.Models;
+﻿using CarthageLink.Server.Models;
+using CarthageLink.Server.Repositories;
 using Microsoft.AspNetCore.SignalR;
 using System.Text;
-using CarthageLink.Server.Repositories;
+
 using System.Text.Json;
 
 namespace CarthageLink.Server.Services

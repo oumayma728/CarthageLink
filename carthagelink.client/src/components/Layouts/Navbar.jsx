@@ -8,6 +8,16 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext.js";
 import { useAlertContext } from "../../contexts/AlertContext.js";
 
+// Sensor type to unit mapping (consistent with AlertsDashboard)
+const SENSOR_UNITS = {
+  0: '°C',    // Temperature
+  1: '%',     // Humidity
+  2: ' km/h', // Speedometer
+  3: ' m/s²', // Accelerometer
+  4: ' cm',   // Waterlevel
+  5: '',      // System
+};
+
 export default function Navbar({
   darkMode,
   onToggleTheme,
@@ -31,63 +41,40 @@ export default function Navbar({
   const [issueDesc, setIssueDesc] = useState("");
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  /**
+   * Formats alert message with consistent value and unit display
+   * @param {Object} alert - The alert object
+   * @returns {string} Formatted message
+   */
   const formatAlertMessage = (alert) => {
     if (!alert) return "";
-    
-    // Extract the numeric value from the message (including decimal points)
-    const valueMatch = alert.message.match(/\(([\d.]+)\)/);
-    const value = valueMatch ? valueMatch[1] : alert.value || "";
-    
-    // Get the appropriate unit based on sensor type
-    const getUnit = (sensorType) => {
-      if (typeof sensorType !== 'string') {
-        return ''; // If sensorType is not a string, return an empty string
-      }
-    
-      const type = sensorType.toLowerCase();
-      if (type.includes('water')) return ' cm';
-      if (type.includes('temp')) return '°C';
-      if (type.includes('speed')) return ' km/h';
-      if (type.includes('accelerometer')) return ' m/s²';
-      return '';
-    };
-    
-    
-    const unit = alert.unit || getUnit(alert.sensorType) || "";
-    
-    // Clean up the message by removing any existing value/unit and incorrect sensor names
-    let cleanMessage = alert.message
-      .replace(/\(.*\)/, "")
-      .replace(/Speedometer|Accelerometer|Waterlevel/, "")
-      .trim();
-    
-    return `${cleanMessage} (${value}${unit})`;
+    // Always use the mapped name based on sensorType
+    const unit = SENSOR_UNITS[alert.sensorType] || '';
+  
+    // Extract value
+    const value = alert.value !== undefined ? alert.value : 
+        alert.message.match(/(\d+(?:\.\d+)?)/)?.[0] || '--';
+  
+    return `is too ${alert.message.includes('HIGH') ? 'HIGH' : 'LOW'}! (${value}${unit})`;
   };
 
-  // Show toast notification for latest alerts
+  // Show notification for latest alerts
   useEffect(() => {
     if (latestAlert) {
+      console.log("Raw alert data:", latestAlert); // Debug log
       setIsNotifOpen(true);
 
       if ("Notification" in window && Notification.permission === "granted") {
-        const notification = new Notification(
-          `${latestAlert.sensorName} Alert`,
+        new Notification(
+          `${latestAlert.sensorName || 'Alert'}`,
           {
             body: formatAlertMessage(latestAlert),
             icon: "/notification-icon.png",
-            requireInteraction: true,
           }
         );
-
-        notification.onclick = () => {
-          navigate("/alerts");
-          window.focus();
-        };
-
-        setTimeout(() => notification.close(), 10000);
       }
     }
-  }, [latestAlert, navigate]);
+  }, [latestAlert]);
 
   const handleRefreshClick = async () => {
     setIsRefreshing(true);
@@ -98,6 +85,7 @@ export default function Navbar({
     }
   };
 
+  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (profileRef.current && !profileRef.current.contains(event.target)) {
@@ -191,51 +179,49 @@ export default function Navbar({
                       <h4 className="text-sm font-semibold text-gray-800 dark:text-white">Alerts</h4>
                     </div>
                     <ul className="divide-y divide-gray-100 dark:divide-gray-700 text-sm">
-                    {alerts.length > 0 ? (
-                    alerts.slice(0, 3).map((alert) => (
-                      <li
-                        key={alert.id}
-                        className="px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
-                        onClick={() => {
-                          navigate("/alerts");
-                          setIsNotifOpen(false);
-                        }}
-                      >
-                        <div className="flex items-start gap-2">
-                          <div
-                            className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0"
-                            style={{ backgroundColor: generateSensorColor(alert.sensorType) }}
-                          />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-gray-700 dark:text-gray-300 font-medium truncate">
-                              {alert.sensorName}
-                            </p>
-                            <p className="text-gray-600 dark:text-gray-400 truncate">
-                              {formatAlertMessage(alert)}
-                            </p>
-                          </div>
-                        </div>
-                        <span className="text-xs text-gray-400 mt-1 block">
-                          {formatRelativeTime(alert.timestamp)}
-                        </span>
-                      </li>
-                    ))
-                  ) : (
-                    <li className="px-4 py-3 text-gray-500 dark:text-gray-400">No new alerts</li>
-                  )}
-
-                  {alerts.length > 3 && (
-                    <li
-                      className="px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 text-center text-blue-500 dark:text-blue-400 cursor-pointer"
-                      onClick={() => {
-                        navigate("/alerts");
-                        setIsNotifOpen(false);
-                      }}
-                    >
-                      View All ({alerts.length})
-                    </li>
-                  )}
-
+                      {alerts.length > 0 ? (
+                        alerts.slice(0, 3).map((alert) => (
+                          <li
+                            key={alert.id}
+                            className="px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+                            onClick={() => {
+                              navigate("/Alert");
+                              setIsNotifOpen(false);
+                            }}
+                          >
+                            <div className="flex items-start gap-2">
+                              <div
+                                className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0"
+                                style={{ backgroundColor: generateSensorColor(alert.sensorType) }}
+                              />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-gray-700 dark:text-gray-300 font-medium truncate">
+                                  {alert.sensorName || 'Alert'}
+                                </p>
+                                <p className="text-gray-600 dark:text-gray-400 truncate">
+                                  {formatAlertMessage(alert)}
+                                </p>
+                              </div>
+                            </div>
+                            <span className="text-xs text-gray-400 mt-1 block">
+                              {formatRelativeTime(alert.timestamp)}
+                            </span>
+                          </li>
+                        ))
+                      ) : (
+                        <li className="px-4 py-3 text-gray-500 dark:text-gray-400">No new alerts</li>
+                      )}
+                      {alerts.length > 3 && (
+                        <li
+                          className="px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 text-center text-blue-500 dark:text-blue-400 cursor-pointer"
+                          onClick={() => {
+                            navigate("/alerts");
+                            setIsNotifOpen(false);
+                          }}
+                        >
+                          View All ({alerts.length})
+                        </li>
+                      )}
                     </ul>
                   </div>
                 )}

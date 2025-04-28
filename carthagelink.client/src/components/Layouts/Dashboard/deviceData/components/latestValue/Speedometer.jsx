@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types';
-import { useState, useEffect} from 'react'; 
+import { useState, useEffect, useContext } from 'react';
 import { SparkLineChart } from '@mui/x-charts/SparkLineChart';
 import { areaElementClasses } from '@mui/x-charts/LineChart';
 import Card from '@mui/material/Card';
@@ -8,13 +8,17 @@ import Typography from '@mui/material/Typography';
 import Divider from '@mui/material/Divider';
 import Box from '@mui/material/Box';
 import GaugeComponent from 'react-gauge-component';
-import AreaGradient from './AreaGradient'; 
+import AreaGradient from './AreaGradient';
 import { getSensorDataByField } from '../../../../../../api/SensorDataApi.js';
+import { DarkModeContext } from '../../../../../../contexts/DarkModeContext.js'; // Import DarkModeContext
 
 export default function Speedometer({ value, deviceId }) {
   const [Speed, setSpeed] = useState(value);
   const [latestValues, setLatestValues] = useState([]);
   const [timestamps, setTimestamps] = useState([]);
+
+  // Access dark mode from the context
+  const { darkMode } = useContext(DarkModeContext);
 
   useEffect(() => {
     setSpeed(value);
@@ -47,15 +51,16 @@ export default function Speedometer({ value, deviceId }) {
 
   useEffect(() => {
     fetchSensorData(deviceId, 20);
-  } , [deviceId]);
+  }, [deviceId]);
 
   return (
-    <Card sx={{ padding: 2}}>
+    <Card sx={{ padding: 2, backgroundColor: darkMode ? 'grey.800' : 'white' }}>
       <CardContent sx={{ height: "100%" }}>
-        <Typography variant='h5' align='center' gutterBottom>
+        <Typography variant='h5' align='center' gutterBottom sx={{ color: darkMode ? 'white' : 'black' }}>
           Speedometer
         </Typography>
-        <Divider />
+        <Divider sx={{ mb: 2 }} />
+
         <Box height='75%' display="flex" justifyContent="center" alignItems="center">
           <GaugeComponent
             value={Speed}
@@ -92,6 +97,7 @@ export default function Speedometer({ value, deviceId }) {
             }}
           />
         </Box>
+
         <Box sx={{ width: '100%', height: 50 }}>
           <SparkLineChart
             colors={['#E6C52A']}
@@ -107,16 +113,16 @@ export default function Speedometer({ value, deviceId }) {
             }}
             sx={{
               [`& .${areaElementClasses.root}`]: {
-                fill:`url(#area-gradient-${value})`,
+                fill: `url(#area-gradient-${value})`,
               },
             }}
-          >  
+          >
             <AreaGradient color={"#E6C52A"} id={`area-gradient-${value}`} />
           </SparkLineChart>
         </Box>
       </CardContent>
     </Card>
-  )
+  );
 }
 
 Speedometer.propTypes = {

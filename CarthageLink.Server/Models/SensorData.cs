@@ -6,11 +6,12 @@ namespace CarthageLink.Server.Models
 {
     public enum SensorType
     {
-        Temperature,
-        Humidity,
-        Speedometer,
-        Accelerometer,
-        Waterlevel
+        Temperature = 0,    // °C
+        Humidity = 1,       // %
+        Speedometer = 2,    // km/h
+        Accelerometer = 3,  // m/s²
+        Waterlevel = 4,     // cm
+        System = 5          // System alerts
     }
 
 

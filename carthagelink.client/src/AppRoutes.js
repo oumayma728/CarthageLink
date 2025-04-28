@@ -33,6 +33,8 @@ const DeviceData = lazy(() => import("./components/Layouts/Dashboard/deviceData/
 const FactoryDevice = lazy(() => import("./Pages/FAdmindashboard/FactoryDevice.jsx"));
 //const Settings = lazy(() => import("./components/Layouts/Settings.jsx"));
 const OperatorDashboardPage= lazy(() => import("./Pages/Operatordashboard/OperatordashboardPage.jsx"));
+const PurchaseDevice= lazy(() => import("./components/Main/PurchaseDevice.js"));
+const ReportDetails = lazy(() => import("./Pages/Report/ReportDetails.jsx"));
 
 const AppRoutes = [
   {
@@ -85,6 +87,17 @@ const AppRoutes = [
       {
         index: true,
         element: <DevicePage />
+      }
+    ]
+  },
+  ,
+  {
+    path: "/reports/:id",
+    // element: <ProtectedRoute />,
+    children: [
+      {
+        index: true,
+        element: <ReportDetails />
       }
     ]
   },
@@ -259,6 +272,16 @@ const AppRoutes = [
     ]
   },
   {
+    path: "/PurchaseDevice",
+    // element: <ProtectedRoute />,
+    children: [
+      {
+        index: true,
+        element: <PurchaseDevice/>
+      }
+    ]
+  },
+  {
     path: "/settings",
     // element: <ProtectedRoute />,
     children: [
@@ -268,7 +291,6 @@ const AppRoutes = [
       }
     ]
   },
-
   {
     path: "/FactoryDevice/:deviceId",
     // element: <ProtectedRoute />,

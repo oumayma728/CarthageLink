@@ -12,9 +12,9 @@ const api = axios.create({
 
 export const generateReport = async (startDate, endDate) => {
   try {
-    const response = await api.post('/generate', {
+    const response = await axios.post('https://localhost:7086/api/Reports/generate', {
       startDate: startDate.toISOString(),
-      endDate: endDate.toISOString(),
+      endDate: endDate.toISOString()
     });
     return response.data;
   } catch (error) {
@@ -25,7 +25,7 @@ export const generateReport = async (startDate, endDate) => {
 
 export const getAllReports = async () => {
   try {
-    const response = await api.get('/');
+    const response = await api.get('https://localhost:7086/api/Reports');
     return response.data;
   } catch (error) {
     console.error('Error fetching reports:', error);

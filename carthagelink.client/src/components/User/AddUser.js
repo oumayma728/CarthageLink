@@ -5,7 +5,7 @@ export default function New() {
         Name: "",
         Email: "",
         Phone: "",
-        Role: "",
+        Role: "Factory Admin", // Default to "Factory Admin"
         FactoryName: "",    
         LicenseKey: "",
         AssignedDevices: [] 
@@ -43,15 +43,15 @@ export default function New() {
 
     return (
         <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-            <div className="w-full max-w-2xl"> {/* Increased from max-w-md to max-w-2xl */}
+            <div className="w-full max-w-2xl">
                 <div className="bg-white shadow rounded-lg p-8">
                     <div className="text-center mb-6">
                         <h1 className="text-2xl font-bold text-gray-900">Add New User</h1>
                         <p className="mt-2 text-sm text-gray-500">Enter user details below</p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6"> {/* Changed to grid layout */}
-                        <div className="col-span-2"> {/* Full width for name */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="col-span-2">
                             <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
                                 Full Name
                             </label>
@@ -66,7 +66,7 @@ export default function New() {
                             />
                         </div>
 
-                        <div> {/* Email - now in first column */}
+                        <div>
                             <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                                 Email
                             </label>
@@ -81,7 +81,7 @@ export default function New() {
                             />
                         </div>
 
-                        <div> {/* Phone - now in second column */}
+                        <div>
                             <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
                                 Phone
                             </label>
@@ -96,25 +96,23 @@ export default function New() {
                             />
                         </div>
 
-                        <div> {/* Role - first column */}
+                        <div>
                             <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">
                                 Role
                             </label>
                             <select
                                 id="role"
                                 name="Role"
+                                value={entry.Role} // Value set to "Factory Admin"
                                 onChange={handleInputChange}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                                 required
                             >
-                                <option value="">Select a role</option>
-                                <option value="Admin">Admin</option>
-                                <option value="Manager">Manager</option>
-                                <option value="Operator">Operator</option>
+                                <option value="Factory Admin">Factory Admin</option>
                             </select>
                         </div>
 
-                        <div> {/* Factory Name - second column */}
+                        <div>
                             <label htmlFor="factory" className="block text-sm font-medium text-gray-700 mb-1">
                                 Factory Name
                             </label>
@@ -129,7 +127,7 @@ export default function New() {
                             />
                         </div>
 
-                        <div> {/* License Key - first column */}
+                        <div>
                             <label htmlFor="license" className="block text-sm font-medium text-gray-700 mb-1">
                                 License Key
                             </label>
@@ -144,7 +142,7 @@ export default function New() {
                             />
                         </div>
 
-                        <div className="col-span-2"> {/* Full width for devices */}
+                        <div className="col-span-2">
                             <label htmlFor="devices" className="block text-sm font-medium text-gray-700 mb-1">
                                 Assigned Devices
                             </label>

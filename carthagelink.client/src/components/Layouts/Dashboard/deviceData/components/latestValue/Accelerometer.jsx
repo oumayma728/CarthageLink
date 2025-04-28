@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useContext } from 'react';
 import { Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -12,6 +12,7 @@ import {
 } from 'chart.js';
 import GaugeComponent from 'react-gauge-component';
 import { getSensorDataByField } from '../../../../../../api/SensorDataApi.js';
+import { DarkModeContext } from '../../../../../../contexts/DarkModeContext.js'; // Import DarkModeContext
 
 // Register ChartJS components
 ChartJS.register(
@@ -28,6 +29,9 @@ export default function Accelerometer({ value, deviceId }) {
   const [latestValues, setLatestValues] = useState([]);
   const [timestamps, setTimestamps] = useState([]);
   const chartRef = useRef(null);
+
+  // Access dark mode from the context
+  const { darkMode } = useContext(DarkModeContext);
 
   useEffect(() => {
     setAcceleration(value);
@@ -99,7 +103,7 @@ export default function Accelerometer({ value, deviceId }) {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-4 h-full flex flex-col">
+    <div className={`rounded-lg shadow-md p-4 h-full flex flex-col ${darkMode ? 'bg-gray-900 text-white' : 'bg-white text-black'}`}>
       <h3 className="text-xl font-semibold text-center mb-2">Accelerometer</h3>
       <div className="border-b border-gray-200 mb-4"></div>
       

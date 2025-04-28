@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { SparkLineChart } from '@mui/x-charts/SparkLineChart';
 import { areaElementClasses } from '@mui/x-charts/LineChart';
 import Card from '@mui/material/Card';
@@ -10,13 +10,18 @@ import Box from '@mui/material/Box';
 import { color } from 'd3-color';
 import { interpolateRgb } from 'd3-interpolate';
 import LiquidFillGauge from 'react-liquid-gauge';
-import AreaGradient from './AreaGradient'; 
+import AreaGradient from './AreaGradient';
 import { getSensorDataByField } from '../../../../../../api/SensorDataApi.js';
- 
+import { DarkModeContext } from '../../../../../../contexts/DarkModeContext.js';
+
 export default function WaterLevel({ value, deviceId }) {
   const [waterLevel, setWaterLevel] = useState(value);
   const [latestValues, setLatestValues] = useState([]);
   const [timestamps, setTimestamps] = useState([]);
+
+  const { darkMode } = useContext(DarkModeContext);
+
+  const darkModeColor = '#1F2937'; // Dark background color for dark mode
 
   useEffect(() => {
     setWaterLevel(value);
@@ -49,40 +54,44 @@ export default function WaterLevel({ value, deviceId }) {
 
   useEffect(() => {
     fetchSensorData(deviceId, 20);
-  } , [deviceId]);
+  }, [deviceId]);
 
-  const startColor = '#5BC2E7'; //'#6495ed';
-    const endColor = '#005EB8'; //'#dc143c';
-    const interpolate = interpolateRgb(startColor, endColor);
-    const fillColor = interpolate(value / 100);
-    const gradientStops = [
-      {
-        key: '0%',
-        stopColor: color(fillColor).darker(0.5).toString(),
-        stopOpacity: 1,
-        offset: '0%'
-      },
-      {
-        key: '50%',
-        stopColor: fillColor,
-        stopOpacity: 0.75,
-        offset: '50%'
-      },
-      {
-        key: '100%',
-        stopColor: color(fillColor).brighter(0.5).toString(),
-        stopOpacity: 0.5,
-        offset: '100%'
-      }
-    ];
+  // Updated to use the same teal color as Accelerometer
+  const primaryColor = '#4393E4';
+  const startColor = color(primaryColor).darker(0.2).toString();
+  const endColor = color(primaryColor).brighter(0.2).toString();
+  const interpolate = interpolateRgb(startColor, endColor);
+  const fillColor = interpolate(value / 100);
+  
+  const gradientStops = [
+    {
+      key: '0%',
+      stopColor: color(fillColor).darker(0.5).toString(),
+      stopOpacity: 1,
+      offset: '0%'
+    },
+    {
+      key: '50%',
+      stopColor: fillColor,
+      stopOpacity: 0.75,
+      offset: '50%'
+    },
+    {
+      key: '100%',
+      stopColor: color(fillColor).brighter(0.5).toString(),
+      stopOpacity: 0.5,
+      offset: '100%'
+    }
+  ];
 
   return (
-    <Card sx={{ padding: 2 }}>
+    <Card sx={{ padding: 2, backgroundColor: darkMode ? darkModeColor : 'white' }}>
       <CardContent sx={{ height: "100%" }}>
-        <Typography variant='h5' align='center' gutterBottom>
+        <Typography variant='h5' align='center' gutterBottom sx={{ color: darkMode ? 'white' : 'black' }}>
           Water Level
         </Typography>
-        <Divider sx={{ mb: 2 }}/>
+        <Divider sx={{ mb: 2 }} />
+
         <Box height="68%" display="flex" justifyContent="center" alignItems="center">
           <LiquidFillGauge 
             width={150}
@@ -123,7 +132,7 @@ export default function WaterLevel({ value, deviceId }) {
                 fill: fillColor
             }}
             textStyle={{
-                fill: color('#444').toString(),
+                fill: color(darkMode ? '#fff' : '#444').toString(),
                 fontFamily: 'Arial'
             }}
             waveTextStyle={{
@@ -134,7 +143,7 @@ export default function WaterLevel({ value, deviceId }) {
         </Box>
         <Box sx={{ width: '100%', height: 60, mb: 5 }}>
           <SparkLineChart
-            colors={['#4393E4']}
+            colors={[primaryColor]}  // Updated to use the same color
             data={latestValues}
             valueFormatter={(value) => value + ' %'}
             area
@@ -147,16 +156,16 @@ export default function WaterLevel({ value, deviceId }) {
             }}
             sx={{
               [`& .${areaElementClasses.root}`]: {
-                fill:`url(#area-gradient-${value})`,
+                fill: `url(#area-gradient-${value})`,
               },
             }}
           >  
-            <AreaGradient color={"#4393E4"} id={`area-gradient-${value}`} />
+            <AreaGradient color={primaryColor} id={`area-gradient-${value}`} />
           </SparkLineChart>
         </Box>
       </CardContent>
     </Card>
-  )
+  );
 }
 
 WaterLevel.propTypes = {

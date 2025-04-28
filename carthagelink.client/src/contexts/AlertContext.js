@@ -5,16 +5,90 @@ import axios from 'axios';
 export const AlertContext = createContext();
 
 const SENSORS = {
-  1: { name: 'Temperature', unit: '°C', color: '#7c3aed' },
-  2: { name: 'Humidity', unit: '%', color: '#10b981' },
-  3: { name: 'Speedometer', unit: 'km/h', color: '#0ea5e9' },
-  4: { name: 'Accelerometer', unit: 'm/s²', color: '#f59e0b' },
-  5: { name: 'Waterlevel', unit: 'cm', color: '#6366f1' }
+  0: { name: 'Temperature', unit: '°C', color: '#FF6B6B', icon: 'thermometer', thresholds: { critical: 80, warning: 60 } },
+  1: { name: 'Humidity', unit: '%', color: '#4ECDC4', icon: 'droplet', thresholds: { critical: 90, warning: 70 } },
+  2: { name: 'Speedometer', unit: 'km/h', color: '#45B7D1', icon: 'gauge', thresholds: { critical: 120, warning: 90 } },
+  3: { name: 'Accelerometer', unit: 'm/s²', color: '#FFA07A', icon: 'move-3d', thresholds: { critical: 15, warning: 10 } },
+  4: { name: 'Waterlevel', unit: 'cm', color: '#A28DFF', icon: 'waves', thresholds: { critical: 200, warning: 150 } },
+  //System: { name: 'System', unit: '', color: '#FFA500', icon: 'alert-triangle', thresholds: { critical: 1, warning: 0 } }
 };
 
 export const AlertProvider = ({ children }) => {
   const [alerts, setAlerts] = useState([]);
   const [latestAlert, setLatestAlert] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const processAlert = (rawAlert) => {
+    if (!rawAlert) return null;
+    
+    // Handle different alert formats (API vs SignalR)
+    const normalizedAlert = {
+      id: rawAlert.id || rawAlert._id || `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      deviceId: rawAlert.deviceId || rawAlert.DeviceId || 'unknown',
+      sensorType: rawAlert.sensorType || rawAlert.SensorType,
+      value: rawAlert.value || rawAlert.Value,
+      message: rawAlert.message || rawAlert.Message,
+      timestamp: rawAlert.timestamp || rawAlert.Timestamp || new Date().toISOString()
+    };
+  
+    // System alerts handling
+    if (normalizedAlert.message?.includes("Missing sensor data")) {
+      return {
+        ...normalizedAlert,
+        sensorType: 'System',
+        sensorName: 'System Warning',
+        unit: '',
+        value: 0,
+        severity: 'Warning',
+        isSystemAlert: true,
+        time: new Date(normalizedAlert.timestamp).toLocaleTimeString()
+      };
+    }
+  
+    // Normalize sensor type
+    const sensorType = typeof normalizedAlert.sensorType === 'string' 
+      ? {
+          'temperature': 0,
+          'humidity': 1,
+          'speedometer': 2,
+          'accelerometer': 3,
+          'waterlevel': 4
+        }[normalizedAlert.sensorType.toLowerCase()] 
+      : normalizedAlert.sensorType;
+  
+    const sensorConfig = SENSORS[sensorType];
+    if (!sensorConfig) {
+      console.error('Invalid sensor type:', normalizedAlert.sensorType, 'in alert:', normalizedAlert);
+      return null;
+    }
+  
+    // Extract value from message if not provided
+    let value = normalizedAlert.value;
+    if (value === undefined || value === null) {
+      const valueMatch = normalizedAlert.message.match(/\(([\d.]+)\)/);
+      value = valueMatch ? parseFloat(valueMatch[1]) : '--';
+    }
+  
+    // Calculate severity
+    let severity = 'Medium';
+    if (value !== '--') {
+      if (value >= sensorConfig.thresholds.critical) severity = 'Critical';
+      else if (value >= sensorConfig.thresholds.warning) severity = 'High';
+    }
+  
+    return {
+      ...normalizedAlert,
+      sensorType,
+      sensorName: sensorConfig.name,
+      value,
+      unit: sensorConfig.unit,
+      severity,
+      time: new Date(normalizedAlert.timestamp).toLocaleTimeString(),
+      isSystemAlert: false,
+      icon: sensorConfig.icon,
+      color: sensorConfig.color
+    };
+  };
 
   const generateSensorColor = (sensorType) => {
     return SENSORS[sensorType]?.color || '#94a3b8';
@@ -22,61 +96,44 @@ export const AlertProvider = ({ children }) => {
 
   const formatRelativeTime = (timestamp) => {
     if (!timestamp) return 'Just now';
-    
     const now = new Date();
     const date = new Date(timestamp);
     const seconds = Math.floor((now - date) / 1000);
-    
     if (seconds < 60) return 'Just now';
     if (seconds < 3600) return `${Math.floor(seconds/60)}m ago`;
     if (seconds < 86400) return `${Math.floor(seconds/3600)}h ago`;
     return `${Math.floor(seconds/86400)}d ago`;
   };
 
+  const generateTrendData = () => Array(5).fill(0).map(() => Math.random() * 100);
+
   useEffect(() => {
     const connection = new signalR.HubConnectionBuilder()
       .withUrl("https://localhost:7086/alertHub")
       .withAutomaticReconnect()
-      .configureLogging(signalR.LogLevel.Information)
       .build();
 
     connection.on("ReceiveAlert", (alert) => {
-      console.log("New alert received:", alert);
-      
-      const newAlert = {
-        id: alert._id || Math.random().toString(),
-        deviceId: alert.deviceId || alert.DeviceId || 'Unknown Device',
-        sensorType: alert.sensorType || alert.SensorType,
-        sensorName: SENSORS[alert.sensorType || alert.SensorType]?.name || 'Sensor',
-        value: alert.value || alert.Value || 'N/A',
-        message: alert.message || alert.Message || 'No message',
-        timestamp: alert.timestamp || alert.Timestamp || new Date().toISOString(),
-        severity: alert.severity || alert.Severity || 'Medium'
-      };
-
-      setLatestAlert(newAlert);
-      setAlerts(prev => [newAlert, ...prev].slice(0, 50)); // Keep last 50 alerts
+      const processedAlert = processAlert(alert);
+      if (processedAlert) {
+        setLatestAlert(processedAlert);
+        setAlerts(prev => [processedAlert, ...prev]);
+      }
     });
 
     const fetchAlerts = async () => {
       try {
+        setIsLoading(true);
         const res = await axios.get("https://localhost:7086/api/Alerts");
-        const formattedAlerts = res.data.map(alert => ({
-          id: alert._id || Math.random().toString(),
-          deviceId: alert.deviceId || alert.DeviceId || 'Unknown Device',
-          sensorType: alert.sensorType || alert.SensorType,
-          sensorName: SENSORS[alert.sensorType || alert.SensorType]?.name || 'Sensor',
-          value: alert.value || alert.Value || 'N/A',
-          message: alert.message || alert.Message || 'No message',
-          timestamp: alert.timestamp || alert.Timestamp || new Date().toISOString(),
-          severity: alert.severity || alert.Severity || 'Medium'
-        }));
-        setAlerts(formattedAlerts);
-        if (formattedAlerts.length > 0) {
-          setLatestAlert(formattedAlerts[0]);
+        const processedAlerts = res.data.map(processAlert).filter(Boolean);
+        setAlerts(processedAlerts);
+        if (processedAlerts.length > 0) {
+          setLatestAlert(processedAlerts[0]);
         }
       } catch (error) {
         console.error("Failed to fetch alerts:", error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -87,27 +144,22 @@ export const AlertProvider = ({ children }) => {
       })
       .catch(err => console.error("SignalR Connection Error:", err));
 
-    return () => {
-      connection.stop();
-    };
+    return () => connection.stop();
   }, []);
 
   return (
     <AlertContext.Provider value={{ 
       alerts, 
       latestAlert,
+      isLoading,
       generateSensorColor,
-      formatRelativeTime
+      formatRelativeTime,
+      generateTrendData,
+      SENSORS
     }}>
       {children}
     </AlertContext.Provider>
   );
 };
 
-export const useAlertContext = () => {
-  const context = useContext(AlertContext);
-  if (!context) {
-    throw new Error("useAlertContext must be used within an AlertProvider");
-  }
-  return context;
-};
+export const useAlertContext = () => useContext(AlertContext);
